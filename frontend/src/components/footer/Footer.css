@@ -1,0 +1,208 @@
+.footer {
+  background: #fff;
+  border-top: 1px solid #e9e9e9;
+  margin-top: 40px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.footer-inner {
+  width: 1200px;
+  max-width: 96%;
+  margin: 0 auto;
+  padding: 34px 0 28px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.4fr 2fr 1.6fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* BRAND COLUMN - CĂN GIỮA LOGO TO VÀ CÁC ICON */
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-right: 12px;
+}
+
+.footer-logo-link {
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.footer-logo {
+  width: 220px;
+  height: auto;
+  object-fit: contain;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.social-btn-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2b303a;
+  color: #fff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.social-btn-circle:hover {
+  background: var(--primary-green, #088751);
+  transform: translateY(-2px);
+}
+
+/* COLUMNS */
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  padding-left: 12px;
+  border-left: 1px solid #f2f2f2;
+}
+
+.footer-col:first-of-type {
+  border-left: none;
+}
+
+.footer-col-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 16px;
+}
+
+.footer-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-links-list a {
+  color: #444;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+  transition: color 0.15s;
+}
+
+.footer-links-list a:hover {
+  color: var(--primary-green, #088751);
+}
+
+/* PAYMENT LOGOS GRID - GỌN GÀNG 2 HÀNG THẲNG HÀNG */
+.payment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pay-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pay-logo-badge {
+  background: #f8f9fa;
+  border: 1px solid #dcdcdc;
+  border-radius: 0px; /* KHÔNG BO GÓC */
+  padding: 4px 8px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* APP DOWNLOAD BOX - KHÔNG BO GÓC */
+.app-download-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.app-store-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.download-badge-btn {
+  background: #000;
+  color: #fff;
+  border-radius: 0px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.qr-code-box {
+  width: 68px;
+  height: 68px;
+  border: 1px solid #dcdcdc;
+  border-radius: 0px;
+  padding: 4px;
+  background: #fff;
+}
+
+.qr-code-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-note-sub {
+  font-size: 11px;
+  color: #666;
+  margin-top: 8px;
+}
+
+/* BOTTOM COPYRIGHT BAR */
+.footer-bottom-bar {
+  border-top: 1px solid #ededed;
+  padding: 16px 0 18px;
+  font-size: 12px;
+  color: #666;
+}
+
+.footer-bottom-content {
+  width: 1200px;
+  max-width: 96%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legal-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legal-links a {
+  color: #666;
+  text-decoration: none;
+}
+
+.legal-links a:hover {
+  color: var(--primary-green, #088751);
+}

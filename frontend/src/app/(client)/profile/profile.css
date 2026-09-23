@@ -1,0 +1,131 @@
+/* PROFILE PAGE STYLES */
+
+.profile-page-wrapper {
+  padding: 16px 0 40px;
+  background-color: var(--bg-light, #f5f6f8);
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+}
+
+.profile-sidebar {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.user-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #088751;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.user-name-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}
+
+.profile-menu {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-item-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #444;
+  text-decoration: none;
+}
+
+.menu-item-link:hover, .menu-item-link.active {
+  background: #eaf6f0;
+  color: #088751;
+  font-weight: 700;
+}
+
+.profile-content-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  padding: 24px;
+}
+
+.content-header-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-input {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: #088751;
+}
+
+.save-btn {
+  background: #088751;
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 20px;
+}

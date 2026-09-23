@@ -1,0 +1,79 @@
+# MerRec Training Pipeline Configuration
+
+project:
+  name: "MerRec Recommendation System"
+  version: "1.0.0"
+  seed: 42
+
+paths:
+  raw_data: "data/raw/20230501"
+  processed_data: "data/processed/recommender"
+  checkpoints: "training/checkpoints"
+  artifacts: "artifacts"
+
+preprocessing:
+  val_days: 3
+  test_days: 3
+  trend_half_life_days: 3.0
+  event_weights:
+    view: 1.0
+    like: 2.0
+    cart: 4.0
+    offer: 5.0
+    buy_start: 7.0
+    buy_comp: 10.0
+
+models:
+  popularity_trending:
+    top_k: 100
+  content_based:
+    tfidf_max_features: 5000
+    top_k: 50
+  covisitation:
+    max_co_occurring: 30
+  als:
+    factors: 64
+    regularization: 0.05
+    iterations: 20
+    checkpoint_dir: "training/checkpoints/als"
+  lightfm:
+    no_components: 32
+    loss: "warp"
+    epochs: 30
+    checkpoint_dir: "training/checkpoints/lightfm"
+  two_tower:
+    embed_dim: 64
+    hidden_dims: [128, 64]
+    learning_rate: 0.001
+    epochs: 10
+    batch_size: 1024
+    checkpoint_dir: "training/checkpoints/two_tower"
+  sasrec:
+    max_len: 50
+    hidden_units: 64
+    num_blocks: 2
+    num_heads: 2
+    dropout_rate: 0.2
+    learning_rate: 0.001
+    batch_size: 512
+    checkpoint_dir: "training/checkpoints/sasrec"
+  deepfm:
+    embed_dim: 16
+    dnn_hidden: [128, 64]
+    learning_rate: 0.001
+    epochs: 10
+    checkpoint_dir: "training/checkpoints/deepfm"
+  dcn:
+    embed_dim: 16
+    cross_layers: 3
+    dnn_hidden: [128, 64]
+    checkpoint_dir: "training/checkpoints/dcn"
+  lightgbm_ranker:
+    n_estimators: 100
+    learning_rate: 0.05
+    num_leaves: 31
+    checkpoint_dir: "training/checkpoints/lightgbm"
+
+evaluation:
+  top_k_metrics: [5, 10, 20]
+  metrics: ["Recall", "NDCG", "MRR", "MAP"]

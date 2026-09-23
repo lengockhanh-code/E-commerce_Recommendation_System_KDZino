@@ -1,0 +1,467 @@
+/* KDZINO MALL PAGE STYLES */
+
+.mall-page-wrapper {
+  padding-bottom: 40px;
+  background-color: var(--bg-light, #f5f6f8);
+}
+
+/* 1. TOP MALL BANNER USING /mall1.png */
+.mall1-top-banner-card {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  background: #d9f4e5;
+  display: block;
+  aspect-ratio: 3.6 / 1;
+}
+
+.mall1-top-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 12px;
+}
+
+/* BRAND LOGO BAR */
+.brand-logos-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr)) minmax(140px, 1.4fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.brand-logo-card {
+  background: white;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  height: 76px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.brand-logo-card:hover {
+  transform: translateY(-3px);
+  border-color: #088751;
+  box-shadow: 0 4px 12px rgba(8, 135, 81, 0.12);
+}
+
+.brand-more-card {
+  background: #f8fbf9;
+  border: 1px solid #eaeaea;
+  color: #088751;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* TWO COLUMN LAYOUT */
+.mall-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+}
+
+/* LEFT COLUMN */
+.mall-left-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* MALL CATEGORIES STRIP WITH REAL PRODUCT THUMBNAILS */
+.mall-cats-box {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 18px 16px;
+}
+
+.mall-cats-box h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 16px;
+}
+
+.mall-cats-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+}
+
+.mall-cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #333;
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 0.2s;
+}
+
+.mall-cat-item:hover {
+  transform: translateY(-3px);
+  color: #088751;
+}
+
+.mall-cat-img-box {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f4f6f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #eaeaea;
+  padding: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.mall-cat-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* FLASH SALE MALL */
+.flash-sale-mall-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+}
+
+.flash-sale-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.flash-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.flash-main-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ee4d2d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #555;
+}
+
+.timer-num {
+  background: #ee4d2d;
+  color: white;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.products-grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+/* FEATURED BRAND STORES */
+.brand-stores-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+}
+
+.section-head-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-head-flex h3 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #222;
+}
+
+.brand-stores-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.brand-store-card {
+  background: #f8fbf9;
+  border: 1px solid #e2f2e7;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.brand-store-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(8, 135, 81, 0.12);
+  border-color: #088751;
+}
+
+.store-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  height: 46px;
+}
+
+.store-logo-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: #111;
+}
+
+.store-slogan {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.store-action-btn {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  color: #088751;
+  background: white;
+  border: 1px solid #088751;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.store-action-btn:hover {
+  background: #088751;
+  color: white;
+}
+
+.store-img-preview {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+/* BEST SELLERS SECTION */
+.best-sellers-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+}
+
+/* RIGHT SIDEBAR */
+.mall-right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* MALL2.PNG UNCROPPED CARD */
+.mall2-card-wrapper {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.mall2-banner-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+
+/* BENEFITS LIST CARD */
+.mall-benefits-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mall-benefit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.benefit-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #eaf6f0;
+  color: #088751;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.benefit-info-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #222;
+  line-height: 1.2;
+}
+
+.benefit-info-sub {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.2;
+}
+
+/* MEMBER PRIVILEGES CARD */
+.member-privilege-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.crown-icon {
+  font-size: 36px;
+  color: #ffa500;
+  margin-bottom: 10px;
+}
+
+.member-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 6px;
+}
+
+.member-sub {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.member-login-btn {
+  width: 100%;
+  background: #088751;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 0;
+  border-radius: 20px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.member-login-btn:hover {
+  background: #066b40;
+}
+
+/* Shared vector marks keep the same proportions in the strip and storefronts. */
+.mall-brand-mark { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 98px; height: 56px; gap: 3px; }
+.mall-brand-mark svg { display: block; width: 100%; height: 48px; flex-shrink: 0; }
+.mall-brand-mark > span { font-size: 10px; font-weight: 500; line-height: 1; }
+.mall-brand-apple svg, .mall-brand-xiaomi svg { width: 32px; height: 32px; }
+.mall-brand-dell svg { width: 44px; height: 44px; }
+.mall-brand-lg svg { width: 55px; height: 45px; }
+.store-card-header .mall-brand-mark { align-items: flex-start; max-width: 104px; height: 42px; }
+.store-card-header .mall-brand-mark svg { height: 38px; }
+.store-card-header .mall-brand-apple, .store-card-header .mall-brand-xiaomi { flex-direction: row; justify-content: flex-start; gap: 8px; }
+.store-card-header .mall-brand-apple svg, .store-card-header .mall-brand-xiaomi svg { width: 30px; height: 30px; }
+.store-card-header .mall-brand-mark > span { font-size: 12px; color: #333; }
+.mall-page-wrapper .products-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.mall-page-wrapper .products-grid-6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.mall-page-wrapper .product-card { min-width: 0; }
+.mall-page-wrapper .product-price-row { flex-wrap: wrap; }
+.mall-page-wrapper .product-image { height: 125px; }
+.mall-page-wrapper .flash-title-group { flex-wrap: wrap; }
+.brand-logo-card:focus-visible, .mall1-top-banner-card:focus-visible { outline: 3px solid #088751; outline-offset: 3px; }
+@media(max-width:1100px) {
+  .brand-logos-row { gap: 8px; grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .brand-more-card { grid-column: 1 / -1; height: 44px; }
+  .brand-more-card br { display: none; }
+  .mall-main-grid { grid-template-columns: minmax(0,1fr) 250px; gap: 16px; }
+  .mall-cats-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .brand-stores-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .mall-page-wrapper .products-grid-5, .mall-page-wrapper .products-grid-6 { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:760px) {
+  .mall1-top-banner-card { aspect-ratio: 2079 / 756; margin-top: 5px; margin-bottom: 14px; border-radius: 8px; }
+  .mall-main-grid { grid-template-columns: minmax(0,1fr); }
+  .brand-logo-card { padding: 8px; height: 66px; }
+  .brand-more-card { height: 40px; }
+  .mall-brand-mark { max-width: 85px; }
+  .mall-brand-mark svg { height: 40px; }
+  .mall-brand-apple svg, .mall-brand-xiaomi svg { height: 28px; }
+  .mall-page-wrapper .products-grid-5, .mall-page-wrapper .products-grid-6 { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .flash-sale-mall-card, .brand-stores-section, .best-sellers-section { padding: 12px; }
+  .flash-sale-header { align-items: flex-start; gap: 8px; }
+  .flash-title-group { gap: 8px; }
+  .mall-right-sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .member-privilege-card { grid-column: 1 / -1; }
+}
+@media(max-width:420px) { .mall-right-sidebar { grid-template-columns: minmax(0,1fr); } }

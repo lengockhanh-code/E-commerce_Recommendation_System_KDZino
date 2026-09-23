@@ -1,0 +1,214 @@
+.banner-section {
+  padding-top: 16px;
+  padding-bottom: 0px;
+  margin-bottom: 12px;
+}
+
+/* HERO GRID CONTAINER */
+.hero-layout-grid {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  height: 380px;
+}
+
+.hero-layout-grid.no-sidebar {
+  display: block;
+}
+
+.hero-layout-grid.no-sidebar .banner-carousel-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* SIDEBAR TRÁI UNIFIED COMPLETE CARD */
+.category-sidebar-unified {
+  width: 240px;
+  min-width: 240px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-header-green {
+  background-color: var(--primary-green, #088751);
+  color: white;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-body-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6.5px 14px;
+  font-size: 13px;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-menu-item:hover {
+  background-color: #f0f9f4;
+  color: var(--primary-green, #088751);
+  font-weight: 600;
+}
+
+.menu-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+}
+
+.arrow-right-icon {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.more-categories-item {
+  border-top: 1px solid #f0f0f0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.more-categories-item:hover {
+  color: var(--primary-green, #088751);
+}
+
+/* CAROUSEL CONTAINER */
+.banner-carousel-container {
+  flex: 1;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f9f9f9;
+  border: 1px solid #eaeaea;
+  height: 380px;
+}
+
+.carousel-track-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.carousel-slides-track {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.carousel-slide-item {
+  min-width: 100%;
+  width: 100%;
+  height: 380px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.carousel-slide-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* NÚT ĐIỀU HƯỚNG TRÁI / PHẢI */
+.carousel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transition: all 0.2s ease;
+  user-select: none;
+  outline: none;
+}
+
+.carousel-nav-btn:hover {
+  background: var(--primary-green, #088751);
+  color: white;
+  border-color: var(--primary-green, #088751);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.carousel-nav-btn:hover svg {
+  stroke: white;
+}
+
+.carousel-nav-btn.prev-btn {
+  left: 16px;
+}
+
+.carousel-nav-btn.next-btn {
+  right: 16px;
+}
+
+/* CAROUSEL DOTS */
+.carousel-dots-row {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 25;
+}
+
+.carousel-dot-item {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.carousel-dot-item.active {
+  background: var(--primary-green, #088751);
+  width: 24px;
+  border-radius: 12px;
+}

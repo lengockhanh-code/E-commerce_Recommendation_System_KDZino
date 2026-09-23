@@ -1,0 +1,138 @@
+.product-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-color: var(--primary-green, #088751);
+}
+
+.badge-discount {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #ee4d2d;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #888;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.wishlist-btn:hover {
+  color: #ee4d2d;
+}
+
+.product-image {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: 6px;
+  display: block;
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+  line-height: 1.4;
+  height: 36px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+}
+
+.product-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.product-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ee4d2d;
+}
+
+.old-price {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.product-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px dashed #f0f0f0;
+}
+
+.product-rating {
+  font-size: 12px;
+  color: #ffa500;
+  font-weight: 600;
+}
+
+.sold-count {
+  color: #777;
+  font-weight: normal;
+}
+
+.add-cart-mini-btn {
+  background: #f0f9f4;
+  color: var(--primary-green, #088751);
+  border: 1px solid var(--primary-green, #088751);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.add-cart-mini-btn:hover {
+  background: var(--primary-green, #088751);
+  color: white;
+}

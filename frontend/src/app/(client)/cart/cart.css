@@ -1,0 +1,144 @@
+/* CART PAGE STYLES */
+
+.cart-page-wrapper {
+  padding: 16px 0 40px;
+  background-color: var(--bg-light, #f5f6f8);
+}
+
+.cart-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #222;
+  margin-bottom: 20px;
+}
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+}
+
+/* CART LIST */
+.cart-items-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.cart-item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cart-item-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.cart-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+.cart-item-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ee4d2d;
+}
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.cart-item-remove:hover {
+  color: #ee4d2d;
+}
+
+/* CART SUMMARY SIDEBAR */
+.cart-summary-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: fit-content;
+}
+
+.summary-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #555;
+}
+
+.summary-row.total {
+  font-size: 18px;
+  font-weight: 800;
+  color: #222;
+  border-top: 1px dashed #e0e0e0;
+  padding-top: 12px;
+}
+
+.total-price {
+  color: #ee4d2d;
+}
+
+.checkout-btn {
+  background: var(--primary-green, #088751);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  height: 46px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.checkout-btn:hover {
+  background: #066b40;
+}

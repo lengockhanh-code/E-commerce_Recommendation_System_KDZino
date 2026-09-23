@@ -1,0 +1,156 @@
+.vouchers-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.voucher-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.voucher-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-green);
+}
+
+.voucher-icon {
+  font-size: 28px;
+}
+
+.voucher-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ee4d2d;
+  margin-bottom: 2px;
+}
+
+.voucher-sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.home-section {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.flash-sale-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ee4d2d;
+}
+
+.flash-icon {
+  font-size: 22px;
+}
+
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #333;
+  font-weight: normal;
+}
+
+.timer-unit {
+  background: #222;
+  color: white;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.view-all-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.view-all-link:hover {
+  color: var(--primary-green);
+}
+
+.section-main-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #222;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.tab-btn {
+  background: #f5f5f5;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.tab-btn.active, .tab-btn:hover {
+  background: var(--primary-green);
+  color: white;
+}
+
+.products-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+/* RECOMMENDATIONS SECTION BELOW FEATURED PRODUCTS */
+.recommendations-box {
+  margin-top: 30px;
+}
+
+.section-header-recommendations {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recommendations-main-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-green, #088751);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommendations-sub-desc {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}

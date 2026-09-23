@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Khủng long KDZino</title>
+  <rect width="64" height="64" rx="16" fill="#e8f7ee"/>
+  <path fill="#008751" d="M32 9h23v19H42v5h9v5H39v8h-6v10h-8V45h-5v-6h-6v-6H9V19h5v8h6v5h7v-6h5Z"/>
+  <path fill="#006b40" d="M25 51h10v5H25zm14-8h7v8h5v5H40V46h-1Z"/>
+  <path fill="#fff" d="M37 13h6v6h-6Z"/>
+  <path fill="#173a2b" d="M40 14h3v4h-3Z"/>
+  <path fill="#e8f7ee" d="M45 23h10v3H45Z"/>
+</svg>

@@ -1,0 +1,47 @@
+
+# ============================================================
+# MerRec Recommendation System - Python dependencies
+# Target: Python 3.12
+# ============================================================
+
+# ---------- Core data ----------
+numpy>=1.26,<3
+pandas>=2.2,<3
+pyarrow>=16,<24
+duckdb>=1.1,<2
+
+# ---------- Big Data / Spark ----------
+pyspark>=3.5,<4
+
+# ---------- EDA / Visualization ----------
+matplotlib>=3.8,<4
+
+# ---------- Machine Learning / Deep Learning ----------
+scikit-learn>=1.5,<2
+torch>=2.4,<3
+tensorboard>=2.17,<3
+tqdm>=4.66,<5
+joblib>=1.4,<2
+PyYAML>=6,<7
+
+# ---------- Notebook ----------
+jupyter>=1.1,<2
+ipykernel>=6.29,<8
+
+# ---------- Backend API ----------
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+pydantic>=2.8,<3
+python-dotenv>=1,<2
+
+# ---------- PostgreSQL ----------
+SQLAlchemy>=2,<3
+psycopg[binary]>=3.2,<4
+
+# ---------- HTTP / image URL resolver ----------
+requests>=2.32,<3
+ddgs
+
+# ---------- Testing ----------
+pytest>=8,<10
+httpx>=0.27,<1
