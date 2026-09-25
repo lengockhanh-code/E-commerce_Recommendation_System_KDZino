@@ -53,7 +53,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     ["Danh mục", [category, product.c1_name, product.c2_name].filter(Boolean).join(" › ")],
     ...(product.brand ? [["Thương hiệu", product.brand]] : []),
     ...(condition ? [["Tình trạng", condition]] : []),
-    ...(product.size ? [[product.c0_name === "Electronics" ? "Thông số phiên bản" : "Kích cỡ", product.size]] : []),
+    ...(product.size ? [["Kích cỡ", product.size]] : []),
     ...(product.color ? [["Màu sắc", product.color]] : []),
     ["Mã sản phẩm", product.id],
     ...(product.shipper === "Seller" || product.shipper === "Buyer" ? [["Phí vận chuyển", product.shipper === "Seller" ? "Người bán chi trả" : "Người mua chi trả"]] : []),
@@ -114,7 +114,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       <div className="pdp-bottom-layout">
         <div>
           <section className="pdp-section" id="specifications"><div className="pdp-tabs"><a className="active" href="#specifications">Chi tiết sản phẩm</a><a href="#description">Mô tả sản phẩm</a><a href="#reviews">Đánh giá</a></div><h2>CHI TIẾT SẢN PHẨM</h2><dl className="pdp-specs">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-            <div id="description" className="pdp-description"><h2>MÔ TẢ SẢN PHẨM</h2><h3>{product.name}</h3><p>{product.description || `${product.name} thuộc nhóm ${[product.c1_name, product.c2_name].filter(Boolean).join(" / ") || category}.${product.brand ? ` Thương hiệu: ${product.brand}.` : ""}${condition ? ` Tình trạng: ${condition.toLowerCase()}.` : ""}`}</p></div>
+            <div id="description" className="pdp-description"><h2>MÔ TẢ SẢN PHẨM</h2><h3>{product.name}</h3><p style={{ whiteSpace: "pre-line" }}>{product.description?.trim() || "Chưa có mô tả sản phẩm."}</p></div>
           </section>
           <section className="pdp-section" id="reviews"><h2>ĐÁNH GIÁ SẢN PHẨM</h2><div className="pdp-review-empty"><span>☆ ☆ ☆ ☆ ☆</span><strong>Chưa có đánh giá cho sản phẩm này</strong><p>Đánh giá từ người mua sẽ xuất hiện tại đây.</p></div></section>
         </div>

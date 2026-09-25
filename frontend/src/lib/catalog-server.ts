@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { MERREC_PRODUCTS, type Product } from "./merrecData";
+import { type Product } from "./merrecData";
 
 const root = path.resolve(process.cwd(), "..");
 const venv = path.join(root, ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
@@ -32,7 +32,7 @@ async function bridge<T>(args: string[], input?: unknown): Promise<T> {
 
 export async function getProduct(id: string): Promise<Product | null> {
   if (!/^\d{1,20}$/.test(id)) return null;
-  return MERREC_PRODUCTS.find((product) => product.id === id) ?? bridge<Product | null>(["detail", id]);
+  return bridge<Product | null>(["detail", id]);
 }
 
 export interface SearchImage { url: string; source: string; title: string }

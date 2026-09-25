@@ -14,7 +14,8 @@ CATALOG = Path(os.environ.get("MERREC_CATALOG_PATH", ROOT / "data/processed/reco
 
 
 def clean(value):
-    return "" if value is None or str(value) in ("__UNK__", "nan", "None") else str(value)
+    text = "" if value is None else str(value).strip()
+    return "" if text.lower() in ("__unk__", "nan", "none", "null") else text
 
 
 def product(row):
@@ -24,7 +25,9 @@ def product(row):
                 c0_display=clean(row["category0"]), c1_name=clean(row["category1"]),
                 c2_name=clean(row["category2"]), brand=clean(row["brand"]),
                 condition=clean(row["condition"]), shipper=clean(row["shipper"]),
-                inStock=True, stockCount=0, stockKnown=False, description="",
+                size=clean(row.get("size")), color=clean(row.get("color")),
+                inStock=True, stockCount=0, stockKnown=False,
+                description=clean(row.get("description")),
                 currency="USD", source="merrec")
 
 
