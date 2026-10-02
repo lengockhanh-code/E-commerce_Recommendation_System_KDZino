@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebookF, FaYoutube, FaTiktok, FaInstagram } from "react-icons/fa";
+import { FaFacebookF, FaYoutube, FaTiktok, FaInstagram, FaApple, FaGooglePlay } from "react-icons/fa";
 import "./Footer.css";
 
 export default function Footer() {
@@ -43,12 +43,13 @@ export default function Footer() {
 
         {/* CỘT 2: VỀ KDZ */}
         <div className="footer-col">
-          <h4 className="footer-col-title">Về KDZ</h4>
+          <h4 className="footer-col-title">Về KDZino</h4>
           <div className="footer-links-list">
             <Link href="#">Giới thiệu</Link>
             <Link href="#">Tin tức</Link>
             <Link href="#">Tuyển dụng</Link>
             <Link href="#">Liên hệ</Link>
+            <Link href="#">Chính sách bảo mật</Link>
           </div>
         </div>
 
@@ -85,15 +86,17 @@ export default function Footer() {
 
         {/* CỘT 5: TẢI ỨNG DỤNG KDZ & QR CODE */}
         <div className="footer-col">
-          <h4 className="footer-col-title">Tải ứng dụng KDZ</h4>
+          <h4 className="footer-col-title">Tải ứng dụng KDZino</h4>
 
           <div className="app-download-container">
             <div className="app-store-btns">
               <a href="#" className="download-badge-btn">
-                <span>🍎</span> App Store
+                <FaApple size={17} style={{ marginBottom: "2px" }} />
+                <span>App Store</span>
               </a>
               <a href="#" className="download-badge-btn">
-                <span>🤖</span> Google Play
+                <FaGooglePlay size={14} />
+                <span>Google Play</span>
               </a>
             </div>
 
@@ -112,7 +115,7 @@ export default function Footer() {
       {/* BANNER BẢO LƯU BẢN QUYỀN CHÂN TRANG */}
       <div className="footer-bottom-bar">
         <div className="footer-bottom-content">
-          <div>© 2024 KDZ. Tất cả các quyền được bảo lưu.</div>
+          <div>© 2024 KDZino. Tất cả các quyền được bảo lưu.</div>
 
           <div className="legal-links">
             <a href="#">Điều khoản sử dụng</a>

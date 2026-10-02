@@ -1,0 +1,47 @@
+{
+  "train": {
+    "rows": 4998458,
+    "cases": 9997,
+    "positives": 3159,
+    "avg_candidates": 499.9957987396219,
+    "candidate_recall": 0.3159947984395319,
+    "serving_policy": "exclude_history",
+    "source_recall": {
+      "content": 0.270481144343303,
+      "covis": 0.20376112833850155,
+      "als": 0.01630489146744023,
+      "gru": 0.005101530459137742,
+      "twotower": 0.0753225967790337
+    }
+  },
+  "val": {
+    "rows": 2478215,
+    "cases": 2909,
+    "positives": 934,
+    "avg_candidates": 851.9130285321417,
+    "candidate_recall": 0.3210725335166724,
+    "serving_policy": "exclude_history",
+    "source_recall": {
+      "content": 0.30216569267789617,
+      "covis": 0.08284633894809212,
+      "als": 0.012719147473358542,
+      "gru": 0.0013750429700928155,
+      "twotower": 0.03471983499484359
+    }
+  },
+  "test": {
+    "rows": 4160185,
+    "cases": 4854,
+    "positives": 1535,
+    "avg_candidates": 857.0632468067573,
+    "candidate_recall": 0.3162340337865678,
+    "serving_policy": "exclude_history",
+    "source_recall": {
+      "content": 0.30366707869798104,
+      "covis": 0.04841367943963741,
+      "als": 0.00865265760197775,
+      "gru": 0.002266172229089411,
+      "twotower": 0.022867737948084055
+    }
+  }
+}

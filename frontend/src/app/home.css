@@ -60,7 +60,7 @@
   align-items: center;
   gap: 16px;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   color: #ee4d2d;
 }
 
@@ -97,7 +97,7 @@
 
 .section-main-title {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 600;
   color: #222;
 }
 
@@ -141,7 +141,7 @@
 
 .recommendations-main-title {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--primary-green, #088751);
   margin-bottom: 6px;
   display: flex;
@@ -153,4 +153,101 @@
   font-size: 13px;
   color: #666;
   line-height: 1.4;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 1200px) {
+  .products-grid-6 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .vouchers-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .products-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .section-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .category-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .flash-sale-title {
+    flex-wrap: wrap;
+    font-size: 17px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .home-section {
+    padding: 14px;
+    margin-bottom: 20px;
+  }
+  .vouchers-strip {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-main-title {
+    font-size: 16px;
+  }
+  .recommendations-main-title {
+    font-size: 17px;
+  }
+  .flash-sale-title {
+    font-size: 15px;
+  }
+  .category-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+  .view-all-link {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .home-section {
+    padding: 10px;
+    margin-bottom: 14px;
+    border-radius: 6px;
+  }
+  .section-main-title {
+    font-size: 15px;
+  }
+  .countdown-timer {
+    font-size: 11px;
+  }
+  .timer-unit {
+    padding: 2px 5px;
+    font-size: 12px;
+  }
 }

@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ProductImage from "./ProductImage";
 import { addToCart } from "@/lib/cart";
+import { animateFlyToCart } from "@/lib/flyToCart";
 import { formatPrice, Product } from "@/lib/merrecData";
+import { trackEventClient } from "@/lib/recommendations-client";
+import { useAuth } from "@/lib/auth-context";
 import "./Product.css";
 
 interface ProductCardProps {
@@ -18,6 +21,7 @@ interface ProductCardProps {
 
 export default function ProductCard(props: ProductCardProps) {
   const product = props.product;
+  const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [notice, setNotice] = useState("");
 
@@ -31,6 +35,17 @@ export default function ProductCard(props: ProductCardProps) {
   const originalPrice = product?.originalPrice;
   const soldCount = product?.soldCount ?? 0;
 
+  const likeKey = `merrec_liked:${user?.id || "guest"}:${id}`;
+  // Restore this browser's optimistic favorite state; the event itself is persisted by the outbox.
+  useEffect(() => { setLiked(localStorage.getItem(likeKey) === "true"); }, [likeKey]);
+
+  function toggleLike() {
+    const next = !liked;
+    localStorage.setItem(likeKey, String(next));
+    setLiked(next);
+    void trackEventClient({ item_id: id, event_type: next ? "like" : "unlike", source_page: "product_card" });
+  }
+
   if (!image) return null;
 
   return (
@@ -39,7 +54,7 @@ export default function ProductCard(props: ProductCardProps) {
         <span className="badge-discount">-{discount}%</span>
       )}
 
-      <button className="wishlist-btn" title="Yêu thích" aria-label="Yêu thích" aria-pressed={liked} onClick={() => setLiked(!liked)}>
+      <button className="wishlist-btn" title="Yêu thích" aria-label={liked ? "Bỏ yêu thích" : "Yêu thích"} aria-pressed={liked} onClick={toggleLike}>
         {liked ? "♥" : "♡"}
       </button>
 
@@ -65,11 +80,24 @@ export default function ProductCard(props: ProductCardProps) {
           <div className="product-rating">
             {rating > 0 ? `★ ${rating}` : product?.condition || "Xem chi tiết"} {soldCount > 0 && <span className="sold-count">| Đã bán {soldCount > 1000 ? `${(soldCount / 1000).toFixed(1)}k` : soldCount}</span>}
           </div>
-          <button className="add-cart-mini-btn" title="Thêm vào giỏ" aria-label={`Thêm ${name} vào giỏ`} onClick={() => { if (product) { try { addToCart(product, 1); setNotice("Đã thêm vào giỏ"); } catch { setNotice("Chưa thêm được vào giỏ"); } } }}>
+          <button
+            className="add-cart-mini-btn"
+            title="Thêm vào giỏ"
+            aria-label={`Thêm ${name} vào giỏ`}
+            onClick={(e) => {
+              if (product) {
+                try {
+                  addToCart(product, 1);
+                  animateFlyToCart(e.currentTarget, image);
+                } catch {
+                  // silent catch
+                }
+              }
+            }}
+          >
             🛒
           </button>
         </div>
-        {notice && <small role="status">{notice}</small>}
       </div>
     </div>
   );

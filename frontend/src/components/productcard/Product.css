@@ -136,3 +136,58 @@
   background: var(--primary-green, #088751);
   color: white;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .product-card {
+    padding: 10px;
+  }
+  .product-image {
+    height: 150px;
+  }
+  .product-name {
+    font-size: 12px;
+    height: 34px;
+  }
+  .product-price {
+    font-size: 14px;
+  }
+  .old-price {
+    font-size: 11px;
+  }
+  .add-cart-mini-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card {
+    padding: 8px;
+  }
+  .product-image {
+    height: 130px;
+    margin-bottom: 8px;
+  }
+  .product-name {
+    font-size: 11px;
+    height: 30px;
+  }
+  .product-price {
+    font-size: 13px;
+  }
+  .badge-discount {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+  .wishlist-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  .product-rating {
+    font-size: 11px;
+  }
+}

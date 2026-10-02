@@ -34,27 +34,23 @@ Requirements bao gồm Pandas, Matplotlib, PySpark, PyArrow và ipykernel. Spark
 - `backend/`: khung API, services, ML inference và database.
 - `frontend/`: khung giao diện và API client.
 - `database/`: schema, seed, migrations và bản sao SQL ảnh để import.
-- `scripts/`: các script xử lý catalog và bộ `merrec_image_resolver` hiện có.
-- `tests/`: kiểm thử, bao gồm hai test resolver đang hoạt động.
+- `scripts/`: storefront catalog and image persistence used by the website.
+- `tests/`: tests for image persistence and local data processing.
 - `logs/`: log và PID cũ của quá trình tìm ảnh.
 
 Các module mới có ghi TODO, chưa triển khai nghiệp vụ. Frontend đã có bộ khung Next.js App Router chạy được; xem cách chạy và cấu trúc tại [frontend/README.md](frontend/README.md). Các trang hiện chưa tích hợp nghiệp vụ backend. File dữ liệu processed và artifacts chỉ được tạo khi pipeline tương ứng được triển khai và chạy; không tạo file nhị phân rỗng.
 
-## Chạy từ thư mục gốc
+## Script phục vụ website
+
+Frontend gọi `scripts/storefront_catalog.py` để đọc thông tin sản phẩm từ catalog Parquet và tìm ảnh theo nhu cầu. `scripts/storefront_images.py` kiểm tra URL ảnh, lưu kết quả vào SQLite cục bộ và đồng bộ sang PostgreSQL.
+
+Chạy kiểm tra bộ lưu ảnh và đồng bộ các bản ghi đang chờ:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe scripts/split_csv.py
-.\.venv\Scripts\python.exe scripts/resolve_images_to_sql.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m unittest tests.test_storefront_images -v
+.\.venv\Scripts\python.exe scripts/storefront_catalog.py sync-images
 ```
 
-Hai script dùng đường dẫn mặc định dựa trên vị trí file, không phụ thuộc thư mục làm việc. Resolver cũng hỗ trợ `python -m scripts.resolve_images_to_sql` và các tùy chọn `--input-dir`, `--db`, `--sql`.
+Xem cấu trúc lưu trữ và cơ chế đồng bộ tại [database/PRODUCT_IMAGES.md](database/PRODUCT_IMAGES.md). Giữ dữ liệu SQLite khi còn bản ghi đang chờ đồng bộ.
 
-`data/catalog/product_images.sql` là đầu ra resolver. `database/product_images.sql` là bản sao tại thời điểm sắp xếp thư mục. Sau khi cập nhật ảnh, đồng bộ trước khi import:
-
-```powershell
-Copy-Item data/catalog/product_images.sql database/product_images.sql
-```
-
-Xem hướng dẫn bộ resolver tại [scripts/merrec_image_resolver/README_VI.md](scripts/merrec_image_resolver/README_VI.md).
+Các script chia CSV và xuất SQL của bộ resolver cũ đã được loại bỏ; website dùng luồng tìm ảnh ở trên.

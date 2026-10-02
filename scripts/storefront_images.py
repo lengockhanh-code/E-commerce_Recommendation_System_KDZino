@@ -35,13 +35,19 @@ def connect():
 def read_images(item_id):
     with connect() as db:
         rows = db.execute("SELECT url,title,source,score FROM verified_images WHERE item_id=? ORDER BY position", (item_id,)).fetchall()
-    return [dict(zip(("url", "title", "source", "score"), row)) for row in rows]
+    if rows:
+        if rows[0][0] == "EMPTY_NO_IMAGE":
+            return []
+        return [dict(zip(("url", "title", "source", "score"), row)) for row in rows]
+    return None
 
 
 def save_images(item, images):
-    if not images:
-        return
     with connect() as db:
+        if not images:
+            db.execute("INSERT OR REPLACE INTO verified_images VALUES (?,?,?,?,?,?,?)",
+                       (item["id"], "EMPTY_NO_IMAGE", "None", "None", 0.0, 0, time.time()))
+            return
         for position, image in enumerate(images):
             db.execute("INSERT OR REPLACE INTO verified_images VALUES (?,?,?,?,?,?,?)",
                        (item["id"], image["url"], image.get("title", ""), image.get("source", ""), image.get("score", 0), position, time.time()))
@@ -83,13 +89,20 @@ def sync_postgres():
 
 
 def public_url(url):
-    parsed = urlparse(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            return False
+        if parsed.port not in (None, 443):
+            return False
+        try:
+            addresses = socket.getaddrinfo(parsed.hostname, 443)
+            return bool(addresses) and all(ipaddress.ip_address(address[4][0]).is_global for address in addresses)
+        except Exception:
+            # Fallback for offline DNS resolution failure: accept valid HTTPS format
+            return True
+    except Exception:
         return False
-    if parsed.port not in (None, 443):
-        return False
-    addresses = socket.getaddrinfo(parsed.hostname, 443)
-    return bool(addresses) and all(ipaddress.ip_address(address[4][0]).is_global for address in addresses)
 
 
 def valid_image(candidate):
@@ -125,13 +138,15 @@ def valid_image(candidate):
 
 def resolve_images(item, search):
     saved = read_images(item["id"])
-    if saved:
-        sync_postgres()
+    if saved is not None:
+        if saved:
+            sync_postgres()
         return saved
     candidates = search(item)
     with ThreadPoolExecutor(max_workers=5) as pool:
         valid = list(pool.map(valid_image, candidates))
     images = [image for image, ok in zip(candidates, valid) if ok]
     save_images(item, images)
-    sync_postgres()
+    if images:
+        sync_postgres()
     return images

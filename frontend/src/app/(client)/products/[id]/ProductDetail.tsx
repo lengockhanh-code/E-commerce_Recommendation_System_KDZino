@@ -4,15 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, ChevronLeft, ChevronRight, Heart, ImageIcon, LoaderCircle, Minus, Plus, RotateCcw, ShoppingCart, X, ZoomIn } from "lucide-react";
-import { MERREC_CATEGORIES, MERREC_PRODUCTS, formatPrice, type Product } from "@/lib/merrecData";
+import { MERREC_CATEGORIES, formatPrice, type Product } from "@/lib/merrecData";
 import { loadProductImages, type ProductImageResult } from "@/lib/product-images";
 import { addToCart } from "@/lib/cart";
-import ProductCard from "@/components/productcard/ProductCard";
+import { animateFlyToCart } from "@/lib/flyToCart";
+import { useAuth } from "@/lib/auth-context";
+import RecommendationStrip from "@/components/recommendation-strip/RecommendationStrip";
+import { trackEventClient } from "@/lib/recommendations-client";
 
 const conditions: Record<string, string> = { New: "Mới", "Like new": "Như mới", Good: "Tốt", Fair: "Khá", Poor: "Đã qua sử dụng" };
 
 export default function ProductDetail({ product }: { product: Product }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [images, setImages] = useState<ProductImageResult[]>([]);
   const [imageState, setImageState] = useState("loading");
   const [selected, setSelected] = useState(0);
@@ -21,9 +25,18 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [liked, setLiked] = useState(false);
   const [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
+  const viewedId = useRef<string | null>(null);
+  const likeKey = `merrec_liked:${user?.id || "guest"}:${product.id}`;
+  useEffect(() => { setLiked(localStorage.getItem(likeKey) === "true"); }, [likeKey]);
+
+  function toggleLike() {
+    const next = !liked;
+    localStorage.setItem(likeKey, String(next));
+    setLiked(next);
+    void trackEventClient({ item_id: product.id, event_type: next ? "like" : "unlike", source_page: "product_detail" });
+  }
   const category = MERREC_CATEGORIES.find((item) => item.c0_name === product.c0_name)?.name || product.c0_name;
   const condition = conditions[product.condition] || product.condition;
-  const related = MERREC_PRODUCTS.filter((item) => item.c0_name === product.c0_name && item.id !== product.id).slice(0, 6);
   const maxQty = product.stockKnown ? product.stockCount : 99;
   const current = images[selected];
 
@@ -41,12 +54,29 @@ export default function ProductDetail({ product }: { product: Product }) {
     return () => { cancelled = true; };
   }, [product.id, attempt]);
 
-  function purchase(buyNow = false) {
+  useEffect(() => {
+    if (!product.id) return;
+    if (viewedId.current === product.id) return;
+    viewedId.current = product.id;
+    void trackEventClient({ item_id: product.id, event_type: "view", source_page: "product_detail" });
+  }, [product.id]);
+
+  function purchase(buyNow = false, event?: React.MouseEvent<HTMLElement>) {
     try {
       addToCart({ ...product, image: current?.url || "" }, qty);
-      setMessage(`Đã thêm ${qty} sản phẩm vào giỏ hàng.`);
-      if (buyNow) router.push("/cart");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Chưa lưu được giỏ hàng trên trình duyệt này."); }
+      if (!buyNow && event) {
+        animateFlyToCart(event.currentTarget, current?.url || product.image);
+      }
+      if (buyNow) {
+        if (!user) {
+          router.push("/login?redirect=/checkout");
+          return;
+        }
+        router.push("/checkout");
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const details = [
@@ -93,7 +123,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
 
         <div className="pdp-info">
-          <div className="pdp-title-row"><h1>{product.name}</h1><button className={`pdp-favorite ${liked ? "is-liked" : ""}`} aria-label={liked ? "Bỏ yêu thích" : "Yêu thích sản phẩm"} aria-pressed={liked} onClick={() => setLiked(!liked)}><Heart size={19} fill={liked ? "currentColor" : "none"} /></button></div>
+          <div className="pdp-title-row"><h1>{product.name}</h1><button className={`pdp-favorite ${liked ? "is-liked" : ""}`} aria-label={liked ? "Bỏ yêu thích" : "Yêu thích sản phẩm"} aria-pressed={liked} onClick={toggleLike}><Heart size={19} fill={liked ? "currentColor" : "none"} /></button></div>
           {(product.rating > 0 || product.soldCount > 0) && <div className="pdp-social-proof">{product.rating > 0 && <a href="#reviews"><span className="pdp-stars">★★★★★</span> {product.rating}</a>}{product.soldCount > 0 && <span>Đã bán {product.soldCount}</span>}</div>}
           <div className="pdp-price-panel">
             <div><strong>{formatPrice(product.price, product.currency)}</strong>{product.originalPrice > product.price && <><del>{formatPrice(product.originalPrice, product.currency)}</del><b>-{product.discount}%</b></>}</div>
@@ -104,12 +134,16 @@ export default function ProductDetail({ product }: { product: Product }) {
             <div className="pdp-field"><label htmlFor="product-quantity">Số lượng</label><div className="pdp-quantity-row"><div className="pdp-quantity"><button disabled={qty <= 1} aria-label="Giảm số lượng" onClick={() => setQty((value) => Math.max(1, value - 1))}><Minus size={15} /></button><input id="product-quantity" type="number" min={1} max={maxQty} value={qty} onChange={(event) => setQty(Math.min(Math.max(1, Number(event.target.value) || 1), Math.max(1, maxQty)))} /><button disabled={qty >= maxQty} aria-label="Tăng số lượng" onClick={() => setQty((value) => Math.min(maxQty, value + 1))}><Plus size={15} /></button></div>{product.stockKnown && <small>{product.stockCount} sản phẩm có sẵn</small>}</div></div>
           </div>
 
-          <div className="pdp-buy-actions"><button className="pdp-add" onClick={() => purchase()} disabled={product.stockKnown && !product.stockCount}><ShoppingCart size={21} />Thêm vào giỏ hàng</button><button className="pdp-buy" onClick={() => purchase(true)} disabled={product.stockKnown && !product.stockCount}>Mua ngay<ArrowRight size={18} /></button></div>
-          <div className="pdp-notice" role="status">{message && <><Check size={16} />{message}<Link href="/cart">Xem giỏ hàng</Link></>}</div>
+          <div className="pdp-buy-actions"><button className="pdp-add" onClick={(e) => purchase(false, e)} disabled={product.stockKnown && !product.stockCount}><ShoppingCart size={21} />Thêm vào giỏ hàng</button><button className="pdp-buy" onClick={(e) => purchase(true, e)} disabled={product.stockKnown && !product.stockCount}>Mua ngay<ArrowRight size={18} /></button></div>
         </div>
       </section>
 
-      {related.length > 0 && <section className="pdp-related"><div className="pdp-section-heading"><h2>Sản phẩm liên quan</h2><Link href={`/products?category=${encodeURIComponent(product.c0_name)}`}>Xem tất cả <ArrowRight size={16} /></Link></div><div className="pdp-related-grid">{related.map((item) => <ProductCard key={item.id} product={item} />)}</div></section>}
+      <RecommendationStrip
+        context="product_detail"
+        triggerItemId={product.id}
+        title="Sản phẩm tương tự"
+        limit={12}
+      />
 
       <div className="pdp-bottom-layout">
         <div>

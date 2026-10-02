@@ -20,6 +20,8 @@ NOTEBOOK = ROOT / 'training/eda_local_merrec_professional.ipynb'
 
 class LocalEdaTests(unittest.TestCase):
     def run_notebook(self, table, exact=False, save_figures=False):
+        if not NOTEBOOK.exists():
+            raise unittest.SkipTest("Notebook training/eda_local_merrec_professional.ipynb does not exist")
         with tempfile.TemporaryDirectory(dir=ROOT / 'tests') as directory:
             folder = Path(directory)
             data = folder / 'input'

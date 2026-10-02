@@ -7,8 +7,9 @@
 
 .listing-grid-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 24px;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
 /* FILTER SIDEBAR */
@@ -19,15 +20,28 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  align-self: start;
+}
 
+.filter-sidebar-header {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.filter-sidebar-header h3 {
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .filter-group-title {
   font-size: 14px;
   font-weight: 700;
   color: #222;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -37,7 +51,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .filter-item {
@@ -47,8 +61,9 @@
   font-size: 13px;
   color: #555;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 5px 8px;
   border-radius: 4px;
+  transition: background 0.15s;
 }
 
 .filter-item:hover, .filter-item.active {
@@ -94,6 +109,7 @@
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .star-rating-filter {
@@ -101,11 +117,143 @@
   font-size: 13px;
 }
 
+/* RESPONSIVE TOOLBAR (MATCHING REFERENCE MOCKUP) */
+.products-responsive-toolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #eaeaea;
+}
+
+.toolbar-left-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-pill-btn {
+  background: #088751;
+  color: white;
+}
+
+.filter-pill-btn:hover {
+  background: #066b40;
+}
+
+.pill-count {
+  font-weight: 700;
+}
+
+.sort-pill-btn {
+  background: #f0f2f5;
+  color: #333;
+}
+
+.sort-pill-btn:hover {
+  background: #e4e7eb;
+}
+
+.sort-popover-wrapper {
+  position: relative;
+}
+
+.sort-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  overflow: hidden;
+}
+
+.sort-dropdown-menu button {
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.sort-dropdown-menu button:hover,
+.sort-dropdown-menu button.active {
+  background: #f0f9f4;
+  color: #088751;
+  font-weight: 600;
+}
+
+.toolbar-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0f2f5;
+  padding: 3px;
+  border-radius: 6px;
+}
+
+.view-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+.view-btn.active {
+  background: #088751;
+  color: white;
+}
+
+.toolbar-total-text {
+  font-size: 13px;
+  color: #666;
+}
+
+.toolbar-total-text strong {
+  color: #222;
+}
+
 /* MAIN CONTENT */
 .main-listing-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .category-banner-top {
@@ -116,31 +264,41 @@
   background: white;
   border-radius: 8px;
   border: 1px solid #eaeaea;
-  padding: 12px 16px;
+  padding: 10px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .sort-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .sort-label {
   font-size: 13px;
   color: #555;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .sort-btn {
   background: #f5f5f5;
   border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 13px;
   color: #444;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.sort-btn:hover {
+  background: #eaf6f0;
+  color: var(--primary-green, #088751);
 }
 
 .sort-btn.active {
@@ -152,28 +310,20 @@
 .sort-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   font-size: 13px;
   color: #666;
-}
-
-.view-mode-btn {
-  background: none;
-  border: 1px solid #ccc;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.view-mode-btn.active {
-  background: var(--primary-green, #088751);
-  color: white;
-  border-color: var(--primary-green, #088751);
+  white-space: nowrap;
 }
 
 .products-grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.products-grid-4.list-mode-grid {
+  grid-template-columns: 1fr;
 }
 
 /* PAGINATION */
@@ -185,8 +335,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .page-numbers {
@@ -213,26 +364,102 @@
   font-weight: 700;
 }
 
-.jump-page-box {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #666;
+/* ===== RESPONSIVE MATCHING REFERENCE MOCKUPS (<= 1200px) ===== */
+
+@media (max-width: 1200px) {
+  .desktop-only-sorting-bar {
+    display: none !important;
+  }
+
+  .products-responsive-toolbar {
+    display: flex;
+  }
+
+  .listing-grid-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Filter Sidebar Drawer */
+  .filter-sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 85vw;
+    z-index: 200;
+    border-radius: 0;
+    border: none;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+    padding: 20px 16px;
+  }
+
+  .filter-sidebar.mobile-open {
+    display: flex;
+  }
+
+  .filter-sidebar-header {
+    display: flex;
+  }
+
+  .filter-close-btn {
+    display: block;
+  }
+
+  .filter-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 190;
+  }
+
+  /* Grid: 2 COLUMNS (Matching reference mockups) */
+  .products-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
 }
 
-.jump-input {
-  width: 40px;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 4px;
-}
+@media (max-width: 640px) {
+  .product-list-wrapper {
+    padding: 10px 0 24px;
+  }
 
-.jump-btn {
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
+  .products-responsive-toolbar {
+    padding: 10px 12px;
+    border-radius: 8px;
+    gap: 8px;
+  }
+
+  .toolbar-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  .toolbar-total-text {
+    width: 100%;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .products-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .pagination-bar {
+    padding: 10px;
+    gap: 4px;
+  }
+
+  .page-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
 }

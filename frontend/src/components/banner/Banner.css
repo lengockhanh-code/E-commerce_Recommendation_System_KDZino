@@ -212,3 +212,67 @@
   width: 24px;
   border-radius: 12px;
 }
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 992px) {
+  .hero-layout-grid {
+    height: auto;
+  }
+  .category-sidebar-unified {
+    display: none;
+  }
+  .banner-carousel-container {
+    height: 300px;
+  }
+  .carousel-slide-item {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .banner-section {
+    padding-top: 10px;
+  }
+  .banner-carousel-container {
+    height: 220px;
+  }
+  .carousel-slide-item {
+    height: 220px;
+  }
+  .carousel-nav-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .carousel-nav-btn.prev-btn {
+    left: 8px;
+  }
+  .carousel-nav-btn.next-btn {
+    right: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-carousel-container {
+    height: 180px;
+    border-radius: 6px;
+  }
+  .carousel-slide-item {
+    height: 180px;
+  }
+  .carousel-nav-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .carousel-dots-row {
+    bottom: 8px;
+    gap: 5px;
+  }
+  .carousel-dot-item {
+    width: 8px;
+    height: 8px;
+  }
+  .carousel-dot-item.active {
+    width: 18px;
+  }
+}

@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+
 import Banner from "@/components/banner/Banner";
 import ProductCard from "@/components/productcard/ProductCard";
+import RecommendationStrip from "@/components/recommendation-strip/RecommendationStrip";
+
 import { MERREC_PRODUCTS } from "@/lib/merrecData";
 import "../home.css";
 
-export default function HomePage() {
+function HomeContent() {
   const [activeTab, setActiveTab] = useState("all");
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 35, seconds: 20 });
-
   // Countdown timer simulation for Flash Sale
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,6 +34,9 @@ export default function HomePage() {
 
   return (
     <div className="home-wrapper">
+      {/* ONBOARDING MODAL POPUP */}
+
+
       {/* Hero Section & Category Sidebar & Round Icons & Benefits Strip */}
       <Banner />
 
@@ -118,23 +123,20 @@ export default function HomePage() {
         </section>
 
         {/* GỢI Ý DÀNH RIÊNG CHO BẠN (MERREC AI RECOMMENDATIONS) SECTION */}
-        <section className="home-section recommendations-box">
-          <div className="section-header-recommendations">
-            <h2 className="recommendations-main-title">
-              ✨ Gợi ý dành riêng cho bạn
-            </h2>
-            <p className="recommendations-sub-desc">
-              Hệ thống MerRec AI phân tích xu hướng mua sắm để gợi ý những sản phẩm phù hợp nhất với sở thích của bạn.
-            </p>
-          </div>
-
-          <div className="products-grid-6">
-            {MERREC_PRODUCTS.slice(12, 24).map((product) => (
-              <ProductCard key={`rec-${product.id}`} product={product} />
-            ))}
-          </div>
-        </section>
+        <RecommendationStrip
+          context="home"
+          title="✨ Gợi ý dành riêng cho bạn"
+          limit={12}
+        />
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="home-wrapper" />}>
+      <HomeContent />
+    </Suspense>
   );
 }

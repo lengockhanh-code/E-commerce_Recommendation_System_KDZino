@@ -1,0 +1,5 @@
+﻿model,Recall@20,NDCG@20,HitRate@20,scope,source
+Content-Based,0.0125144675925925,0.0044286522442719,0.0260416666666666,192 user POSITIVE; full metadata catalog,training\checkpoints\content_based_full_catalog\evaluation_test.csv
+Co-visitation,0.0122451817837995,0.0069313337867934,0.0282975810132359,2.191 user POSITIVE; refit TRAIN+VAL,training\checkpoints\covisitation\polars_v2\results\test_metrics.csv
+ALS,0.0011218983396701,0.0003465620779049,0.0022716946842344,2.201 user POSITIVE; refit TRAIN+VAL,artifacts\merrec_models\ALS\metrics\test_metrics.csv
+Two-Tower,0.0007290725375831759,0.0002632418259510597,0.0017251293847038527,Mẫu TEST cấu hình 5.000 user trước lọc; FAISS full-index,artifacts\merrec_models\TwoTower\metrics\test_full_index_metrics.json

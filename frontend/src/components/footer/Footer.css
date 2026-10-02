@@ -74,7 +74,7 @@
 }
 
 .footer-col-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: #111;
   margin: 0 0 16px;
@@ -84,12 +84,14 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .footer-links-list a {
   color: #444;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
   transition: color 0.15s;
@@ -110,6 +112,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .pay-logo-badge {
@@ -127,7 +130,7 @@
   white-space: nowrap;
 }
 
-/* APP DOWNLOAD BOX - KHÔNG BO GÓC */
+/* APP DOWNLOAD BOX - OFFICIAL BADGES */
 .app-download-container {
   display: flex;
   gap: 12px;
@@ -143,22 +146,27 @@
 .download-badge-btn {
   background: #000;
   color: #fff;
-  border-radius: 0px;
-  padding: 5px 10px;
+  border-radius: 5px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   text-decoration: none;
-  font-size: 10px;
-  font-weight: bold;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.download-badge-btn:hover {
+  background: #222;
 }
 
 .qr-code-box {
   width: 68px;
   height: 68px;
   border: 1px solid #dcdcdc;
-  border-radius: 0px;
+  border-radius: 4px;
   padding: 4px;
   background: #fff;
 }
@@ -205,4 +213,124 @@
 
 .legal-links a:hover {
   color: var(--primary-green, #088751);
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 992px) {
+  .footer-inner {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 16px;
+  }
+  .footer-logo {
+    width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: center; /* CẢ KHỐI NẰM CĂN GIỮA MÀN HÌNH */
+    gap: 24px 40px;
+    padding: 24px 16px;
+    max-width: 100%;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+    padding-right: 0;
+    margin-bottom: 4px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-col {
+    border-left: none;
+    padding-left: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .footer-col-title {
+    text-align: left;
+    margin-bottom: 12px;
+  }
+
+  .footer-links-list {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  /* Phương thức thanh toán - CĂN GIỮA */
+  .footer-col:nth-child(4) {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-col:nth-child(4) .footer-col-title {
+    text-align: center;
+  }
+
+  .payment-grid {
+    align-items: center;
+  }
+
+  .pay-row {
+    justify-content: center;
+  }
+
+  /* Tải ứng dụng KDZ - CĂN GIỮA */
+  .footer-col:nth-child(5) {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-col:nth-child(5) .footer-col-title {
+    text-align: center;
+  }
+
+  .app-download-container {
+    justify-content: center;
+  }
+
+  .qr-note-sub {
+    text-align: center;
+  }
+
+  .footer-bottom-content {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-inner {
+    grid-template-columns: repeat(2, auto);
+    justify-content: center; /* CẢ KHỐI NẰM CĂN GIỮA MÀN HÌNH */
+    gap: 20px 32px;
+    padding: 20px 16px;
+  }
+
+  .footer-logo {
+    width: 150px;
+  }
+
+  .footer-col-title {
+    font-size: 14px;
+  }
+
+  .footer-links-list a {
+    font-size: 13px;
+  }
+
+  .footer-bottom-bar {
+    padding: 12px 0;
+  }
 }
