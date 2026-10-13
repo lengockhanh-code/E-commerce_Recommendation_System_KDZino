@@ -39,7 +39,7 @@ class PersonalizationTests(unittest.TestCase):
                 TIMESTAMP '2026-01-01' + i * INTERVAL '1 day' last_seen_ts
                 FROM range(80) t(i)""")
             db.execute("COPY catalog TO ? (FORMAT PARQUET)", [str(cls.catalog)])
-        cls.environment = patch.dict(os.environ, {"MERREC_CATALOG_PATH": str(cls.catalog), "MERREC_RANKER": "rules"})
+        cls.environment = patch.dict(os.environ, {"MERREC_CATALOG_PATH": str(cls.catalog), "MERREC_RANKER": "rules", "MERREC_AB_ENABLED": "0"})
         cls.environment.start()
 
     @classmethod
@@ -144,7 +144,9 @@ class PersonalizationTests(unittest.TestCase):
             request = db.get(RecommendationRequest, data["request_id"])
             self.assertIsNotNone(request)
             self.assertEqual(request.user_id, self.user_id)
-            self.assertEqual(db.query(RecommendationItem).filter_by(request_id=data["request_id"]).count(), len(data["items"]))
+            saved_items = db.query(RecommendationItem).filter_by(request_id=data["request_id"]).order_by(RecommendationItem.rank_position).all()
+            self.assertGreaterEqual(len(saved_items), len(data["items"]))
+            self.assertEqual([item.item_id for item in saved_items[:len(data["items"])]], [item["id"] for item in data["items"]])
 
     def test_returning_user_with_active_session_routes_long_and_short_term_models(self):
         from scripts.online_models import retrievers_for

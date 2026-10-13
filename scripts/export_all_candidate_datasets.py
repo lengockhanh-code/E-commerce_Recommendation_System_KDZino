@@ -53,16 +53,15 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def fallback_items(limit):
-    """Training-only popularity plus serving-time trending, deduplicated."""
+    """TRAIN-only popularity for offline evaluation; no future serving trends."""
     frames = []
-    for name, score in (("05_top_popularity_train.csv", "popularity_score"),
-                        ("06_top_trending_serving.csv", "trending_score")):
+    for name, score in (("05_top_popularity_train.csv", "popularity_score"),):
         path = ROOT / "data" / "processed" / "recommender" / "tables" / name
         if path.is_file():
             frames.append(pl.read_csv(path).select(
                 pl.col("item_id").cast(pl.String), pl.col(score).cast(pl.Float64).alias("raw_score")))
     if not frames:
-        raise FileNotFoundError("popularity/trending fallback tables are missing")
+        raise FileNotFoundError("TRAIN popularity fallback table is missing")
     fallback = (pl.concat(frames).group_by("item_id").agg(pl.max("raw_score"))
                 .sort(["raw_score", "item_id"], descending=[True, False]).head(limit))
     maximum = fallback["raw_score"].max() or 1.0
@@ -97,8 +96,7 @@ def export_content(split_name):
     if out_path.exists() and not FORCE:
         print(f"Skipping existing: {out_path.name}")
         return
-    # Mirror serving policy: use recent history as profile seeds, but never return
-    # an item already present in history. Product identity and brand+leaf category
+    # Next-interaction evaluation allows previously seen items. Brand+leaf category
     # are stable catalog metadata and require no target/future information.
     con = duckdb.connect()
     con.execute("SET threads=1")
@@ -167,13 +165,11 @@ def export_content(split_name):
         SELECT c.case_id,c.user_id,f.item_id candidate_item_id,c.target_item_id,
                f.score*0.01 score
         FROM cases_tbl c CROSS JOIN fallback_tbl f
-        WHERE NOT list_contains(c.history_item_ids,f.item_id)
       ), merged AS (
         SELECT x.case_id,x.user_id,x.candidate_item_id,x.target_item_id,max(x.score) score
         FROM (SELECT * FROM product_matches UNION ALL SELECT * FROM category_brand_matches
               UNION ALL SELECT * FROM category_matches UNION ALL SELECT * FROM fallback) x
         JOIN cases_tbl h USING(case_id)
-        WHERE NOT list_contains(h.history_item_ids,x.candidate_item_id)
         GROUP BY x.case_id,x.user_id,x.candidate_item_id,x.target_item_id
       ), ranked AS (
         SELECT *,row_number() OVER(PARTITION BY case_id ORDER BY score DESC,candidate_item_id) rank
@@ -203,6 +199,11 @@ def export_covis(split_name):
         build_covis_neighbors(neighbor_path, max_neighbors=max(500, topk))
     con = duckdb.connect()
     con.execute("SET threads=2")
+    con.execute("SET memory_limit='2500MB'")
+    con.execute("SET preserve_insertion_order=false")
+    scratch = CACHE_DIR / "duckdb_covis"
+    scratch.mkdir(parents=True, exist_ok=True)
+    con.execute(f"SET temp_directory='{str(scratch).replace(chr(39), chr(39)*2)}'")
     con.register("cases_tbl", cases_df.to_arrow())
     con.register("fallback_tbl", fallback_items(topk).to_arrow())
     con.from_parquet(str(neighbor_path)).create_view("neighbors")
@@ -234,6 +235,7 @@ def export_covis(split_name):
         SELECT * FROM ranked WHERE rank <= {topk}
         ORDER BY case_id, rank
     """).pl()
+    con.close()
     atomic_write(df_out, out_path)
     recalled = df_out.filter(pl.col("candidate_item_id") == pl.col("target_item_id"))["case_id"].n_unique()
     
@@ -247,7 +249,11 @@ def build_covis_neighbors(out_path, max_neighbors=500):
     temporary = out_path.with_suffix(out_path.suffix + ".tmp")
     con = duckdb.connect()
     con.execute("SET threads=2")
+    con.execute("SET memory_limit='2500MB'")
     con.execute("SET preserve_insertion_order=false")
+    scratch = out_path.parent / "duckdb_covis_fit"
+    scratch.mkdir(parents=True, exist_ok=True)
+    con.execute(f"SET temp_directory='{str(scratch).replace(chr(39), chr(39)*2)}'")
     con.from_parquet(str(train_cases)).create_view("train_cases")
     escaped = str(temporary).replace("'", "''")
     con.execute(f"""COPY (
@@ -482,17 +488,32 @@ def export_twotower(split_name):
     topk = MODEL_SPECS["twotower"]["topk"]
     out_path = EXPORTS_DIR / f"twotower_{split_name}.parquet"
     cases_df = pl.read_parquet(CASES_DIR / f"cases_{split_name}.parquet")
-    if out_path.exists() and not FORCE:
-        print(f"Skipping existing: {out_path.name}")
-        return
-    
     ckpt_path = ROOT / "artifacts" / "merrec_models" / "TwoTower" / "model" / "two_tower_best_model.pt"
     faiss_path = ROOT / "artifacts" / "merrec_models" / "TwoTower" / "index" / "items_ivfpq.faiss"
     map_i_path = ROOT / "artifacts" / "merrec_models" / "TwoTower" / "mappings" / "train_item_map.parquet"
     map_u_path = ROOT / "artifacts" / "merrec_models" / "TwoTower" / "mappings" / "train_user_map.parquet"
+    from scripts.twotower_history import load_history_model, user_queries, uses_history
+    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False, mmap=True)
+    feature_dir = ckpt_path.parents[1] / "features"
+    manifest_path = out_path.with_suffix(".manifest.json")
+    dependency_paths = [ckpt_path, faiss_path, map_i_path, map_u_path,
+                        CASES_DIR / f"cases_{split_name}.parquet", Path(__file__),
+                        Path(__file__).with_name("twotower_history.py")]
+    if uses_history(ckpt):
+        dependency_paths += [feature_dir / (f+".npy") for f in [*ckpt["cfg"]["hash_buckets"],"price_z"]]
+    nprobe = MODEL_SPECS["twotower"].get("nprobe", 128)
+    signature = {"dependencies": [[str(f),f.stat().st_size,f.stat().st_mtime_ns] for f in dependency_paths],
+                 "topk":topk, "nprobe": nprobe}
+    if out_path.exists() and manifest_path.exists() and not FORCE:
+        if json.loads(manifest_path.read_text(encoding="utf-8")) == signature:
+            print(f"Skipping existing: {out_path.name}")
+            return
+    loaded = load_history_model(ckpt,feature_dir) if uses_history(ckpt) else None
     
     index = faiss.read_index(str(faiss_path))
-    faiss.ParameterSpace().set_index_parameter(index, "nprobe", 128)
+    if index.ntotal != ckpt.get("n_items",index.ntotal) or index.d != ckpt["model"]["user.weight"].shape[1]:
+        raise ValueError("Two-Tower checkpoint and index are incompatible")
+    faiss.ParameterSpace().set_index_parameter(index, "nprobe", nprobe)
     unique_users = [str(u) for u in cases_df["user_id"].unique()]
     target_ids = [str(i) for i in cases_df["target_item_id"].unique()]
     with duckdb.connect() as mapping_db:
@@ -502,9 +523,13 @@ def export_twotower(split_name):
             WHERE item_id IN (SELECT unnest(?))""", [str(map_i_path), target_ids]).fetchall()
     u_str_to_idx = {str(key): int(value) for key, value in user_rows}
     target_to_idx = {str(key): int(value) for key, value in target_rows}
-    item_ids_arr = pq.read_table(map_i_path, columns=["item_id"], memory_map=True)["item_id"].combine_chunks()
-    
-    ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    # ANN IDs are item_idx, never physical parquet row offsets.
+    with duckdb.connect() as mapping_db:
+        mapping_db.execute("SET memory_limit='2GB'")
+        stats = mapping_db.execute("SELECT count(*),count(DISTINCT item_idx),min(item_idx),max(item_idx) FROM read_parquet(?)", [str(map_i_path)]).fetchone()
+        if stats != (index.ntotal,index.ntotal,0,index.ntotal-1):
+            raise ValueError("Two-Tower mapping must cover contiguous ANN IDs exactly")
+        item_ids_arr = mapping_db.execute("SELECT item_id FROM read_parquet(?) ORDER BY item_idx", [str(map_i_path)]).fetch_arrow_table()["item_id"].combine_chunks()
     user_emb_w = ckpt["model"]["user.weight"].float()
     
     temporary = out_path.with_suffix(out_path.suffix + ".tmp")
@@ -516,12 +541,21 @@ def export_twotower(split_name):
     for start in range(0, cases_df.height, batch_size):
         batch = cases_df.slice(start, batch_size)
         records = batch.to_dicts()
+        if loaded is not None:
+            history_ids = list({str(i) for row in records for i in row["history_item_ids"]})
+            with duckdb.connect() as mapping_db:
+                history_rows = mapping_db.execute("SELECT item_id,item_idx FROM read_parquet(?) WHERE CAST(item_id AS VARCHAR) IN (SELECT unnest(?))", [str(map_i_path),history_ids]).fetchall()
+            history_mapping = {str(key):int(value) for key,value in history_rows}
+            for row in records:
+                row["_history_indices"] = [history_mapping[str(i)] for i in row["history_item_ids"] if str(i) in history_mapping]
         valid = [(row, u_str_to_idx.get(str(row["user_id"]))) for row in records]
-        valid = [(row, idx) for row, idx in valid if idx is not None and idx < len(user_emb_w)]
+        valid = [(row, idx if idx is not None else -1) for row, idx in valid
+                 if (idx is not None and 0 <= idx < len(user_emb_w)) or (loaded is not None and row["_history_indices"])]
         if not valid:
             continue
-        user_indices = torch.tensor([idx for _, idx in valid], dtype=torch.long)
-        q_vecs = F.normalize(user_emb_w[user_indices], dim=-1).numpy().astype("float32")
+        q_vecs = user_queries(ckpt,[idx for _,idx in valid],
+                             [row.get("_history_indices",[]) for row,_ in valid],
+                             feature_dir,loaded=loaded)
         scores, retrieved_ids = index.search(q_vecs, topk)
         for offset, (row, _) in enumerate(valid):
             target_idx = target_to_idx.get(str(row["target_item_id"]))
@@ -547,10 +581,13 @@ def export_twotower(split_name):
             writer = pq.ParquetWriter(temporary, table.schema, compression="zstd")
         writer.write_table(table)
         rows_written += len(table)
+        if start % (batch_size * 8) == 0:
+            print(f"Two-Tower/{split_name}: {min(start+batch_size,cases_df.height)}/{cases_df.height} cases; nprobe={nprobe}", flush=True)
     if writer is None:
         raise ValueError(f"No mapped Two-Tower users for {split_name}")
     writer.close()
     temporary.replace(out_path)
+    manifest_path.write_text(json.dumps(signature),encoding="utf-8")
     
     recall = recalled_cases / max(1, cases_df.height)
     print_validation_cell(split_name, cases_df.height, rows_written, recall, out_path)

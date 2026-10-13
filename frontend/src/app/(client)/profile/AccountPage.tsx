@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AccountSections from "./AccountSections";
 import { accountSections, type AccountSection } from "./account-data";
-import { Bell, CalendarDays, Check, ChevronRight, Crown, Filter, Gift, Headphones, Heart, History, Home, Keyboard, LockKeyhole, LogOut, Mail, MapPin, Mouse, Package, Pencil, Percent, Phone, Save, Settings, Truck, UserRound } from "lucide-react";
+import { Bell, CalendarDays, Check, ChevronRight, Crown, Filter, Gift, Headphones, Heart, History, Home, Keyboard, LockKeyhole, LogOut, Mail, MapPin, Mouse, Package, Pencil, Percent, Phone, Save, Settings, Store, Truck, UserRound } from "lucide-react";
 import "./profile.css";
 
 const menu = [
@@ -252,6 +252,27 @@ export default function AccountPage({ section = "overview", orderId }: { section
                 </button>
               ))}
               <div className="account-menu-divider" />
+              <Link
+                href="/seller"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "10px 16px",
+                  color: "#008848",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  textDecoration: "none",
+                  borderRadius: "8px",
+                  background: "#f0fbf5",
+                  border: "1px solid #c2eed7",
+                  marginBottom: "8px",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                <Store size={20} />
+                <span>Bắt đầu bán (Kênh người bán)</span>
+              </Link>
               {!isGoogleUser && (
                 <button type="button" onClick={() => open("password")} className={section === "password" ? "is-active" : ""} aria-current={section === "password" ? "page" : undefined}>
                   <LockKeyhole size={20} /><span>Đổi mật khẩu</span>
@@ -260,6 +281,58 @@ export default function AccountPage({ section = "overview", orderId }: { section
               <button type="button" onClick={() => open("settings")} className={section === "settings" ? "is-active" : ""} aria-current={section === "settings" ? "page" : undefined}><Settings size={20} /><span>Cài đặt</span></button>
               <button type="button" onClick={() => open("logout")} className={section === "logout" ? "is-active" : ""} aria-current={section === "logout" ? "page" : undefined}><LogOut size={20} /><span>Đăng xuất</span></button>
             </nav>
+            <div className="account-seller-cta" style={{
+              margin: "16px 0 8px 0",
+              padding: "14px",
+              background: "linear-gradient(135deg, #e6f7ef 0%, #d5f5e3 100%)",
+              borderRadius: "10px",
+              border: "1px solid #a3e9c4",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  background: "#008848",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0
+                }}>
+                  <Store size={18} />
+                </span>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#006634" }}>Bắt đầu bán hàng</div>
+                  <div style={{ fontSize: "11px", color: "#333" }}>Kênh người bán MerRec</div>
+                </div>
+              </div>
+              <p style={{ fontSize: "11px", color: "#444", margin: 0, lineHeight: 1.4 }}>
+                Mở gian hàng kinh doanh cùng MerRec, tiếp cận hàng triệu khách hàng và tăng trưởng doanh thu.
+              </p>
+              <Link
+                href="/seller"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "8px 12px",
+                  background: "#008848",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  borderRadius: "6px",
+                  textDecoration: "none",
+                  textAlign: "center"
+                }}
+              >
+                Vào Kênh Người Bán →
+              </Link>
+            </div>
             <div className="account-support">
               <div className="account-support-heading"><span className="account-support-icon"><Headphones size={27} /></span><div><strong>Cần hỗ trợ?</strong><p>Liên hệ với chúng tôi</p></div></div>
               <button type="button" onClick={() => open("support")}>Liên hệ ngay</button>

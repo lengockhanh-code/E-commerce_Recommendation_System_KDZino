@@ -16,6 +16,7 @@ def get_recommendations_service(
     context: str = "home",
     trigger_item_id: Optional[str] = None,
     user_id: Optional[str] = None,
+    session_id: Optional[str] = None,
     limit: int = 12
 ) -> Dict[str, Any]:
     from recommendation_engine import get_recommendations
@@ -23,5 +24,6 @@ def get_recommendations_service(
         context=context,
         trigger_item_id=trigger_item_id,
         user_id=user_id,
+        session_id=session_id,
         limit=limit
     )

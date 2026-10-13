@@ -46,6 +46,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .rec-main-title {
@@ -105,3 +106,10 @@
 .rec-retry-btn:hover {
   background-color: #06693e;
 }
+
+.rec-load-sentinel { min-height: 72px; display: flex; align-items: center; justify-content: center; }
+.rec-loading-more { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 24px; color: var(--text-gray); }
+.rec-spinner { animation: rec-spin 1s linear infinite; }
+.rec-feed-end { text-align: center; padding: 20px 0 0; color: var(--text-gray); font-size: 14px; }
+@keyframes rec-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rec-spinner, .rec-card-skeleton { animation: none; } }

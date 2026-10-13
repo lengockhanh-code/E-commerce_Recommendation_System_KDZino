@@ -56,6 +56,76 @@ def product_dict(row):
     )
 
 
+def attach_product_images(items, dsn=None):
+    if not items:
+        return items
+    item_ids = [str(it["id"]) for it in items if isinstance(it, dict) and "id" in it]
+    if not item_ids:
+        return items
+
+    image_map = {}
+
+    if dsn:
+        try:
+            import psycopg
+            with psycopg.connect(dsn, connect_timeout=3) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT item_id, image_url
+                        FROM product_images
+                        WHERE item_id = ANY(%s) AND image_url != 'EMPTY_NO_IMAGE'
+                        ORDER BY is_primary DESC, match_score DESC
+                    """, (item_ids,))
+                    for row in cur.fetchall():
+                        iid, url = str(row[0]), str(row[1])
+                        if iid not in image_map:
+                            image_map[iid] = []
+                        if url not in image_map[iid]:
+                            image_map[iid].append(url)
+        except Exception:
+            pass
+
+    missing_ids = [iid for iid in item_ids if iid not in image_map]
+    if missing_ids:
+        try:
+            import sqlite3
+            db_path = ROOT / "data/storefront/product_images.sqlite3"
+            if db_path.exists():
+                with sqlite3.connect(db_path, timeout=3) as db:
+                    placeholders = ",".join(["?"] * len(missing_ids))
+                    rows = db.execute(f"""
+                        SELECT item_id, url
+                        FROM verified_images
+                        WHERE item_id IN ({placeholders}) AND url != 'EMPTY_NO_IMAGE'
+                        ORDER BY position ASC
+                    """, missing_ids).fetchall()
+                    for row in rows:
+                        iid, url = str(row[0]), str(row[1])
+                        if iid not in image_map:
+                            image_map[iid] = []
+                        if url not in image_map[iid]:
+                            image_map[iid].append(url)
+        except Exception:
+            pass
+
+    for it in items:
+        if isinstance(it, dict) and "id" in it:
+            iid = str(it.get("id"))
+            urls = image_map.get(iid, [])
+            if urls:
+                it["image"] = urls[0]
+                it["images"] = urls
+
+    return items
+
+
+
+def fetch_detail_similar(trigger_item_id: str, limit: int = 12):
+    from similar_products import fetch_similar, MODEL_NAME
+    rows = fetch_similar(trigger_item_id, limit)
+    return [dict(product_dict(row), score=float(row["title_matches"])) for row in rows], MODEL_NAME
+
+
 def fetch_metadata_similar_duckdb(trigger_item_id: str, limit: int = 12):
     """
     Performs high-precision Content-Based Filtering using DuckDB over the full 30,000,000+ item catalog.
@@ -163,6 +233,106 @@ def fetch_metadata_similar_duckdb(trigger_item_id: str, limit: int = 12):
     return results[:limit], "content_based_v1"
 
 
+def fetch_metadata_similar_fast(dsn, trigger_item_id: str, limit: int = 12):
+    """Fast candidate retrieval from PostgreSQL products table with DuckDB and popular backfill."""
+    import psycopg
+    items = []
+    try:
+        with psycopg.connect(dsn, connect_timeout=5) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT item_id, name, price, category0, category1, category2, brand, condition, size, color, shipper, is_active
+                    FROM products WHERE item_id = %s
+                """, (trigger_item_id,))
+                target = cur.fetchone()
+                if not target:
+                    try:
+                        from storefront_catalog import read_catalog_parquet
+                        parquet_rows = read_catalog_parquet(trigger_item_id)
+                        if parquet_rows:
+                            p = parquet_rows[0]
+                            cur.execute("""
+                                INSERT INTO products (
+                                    item_id, name, price, category0, category1, category2,
+                                    brand, condition, size, color, shipper, is_active
+                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                                ON CONFLICT (item_id) DO NOTHING
+                            """, (
+                                p["id"], p.get("name"), float(p.get("price") or 0.0),
+                                p.get("c0_name"), p.get("c1_name"), p.get("c2_name"),
+                                p.get("brand"), p.get("condition"), p.get("size"), p.get("color"),
+                                p.get("shipper")
+                            ))
+                            conn.commit()
+                            cur.execute("""
+                                SELECT item_id, name, price, category0, category1, category2, brand, condition, size, color, shipper, is_active
+                                FROM products WHERE item_id = %s
+                            """, (trigger_item_id,))
+                            target = cur.fetchone()
+                    except Exception:
+                        pass
+
+                if target:
+                    t_id, t_name, t_price, t_c0, t_c1, t_c2, t_brand = target[0], target[1], target[2], target[3], target[4], target[5], target[6]
+                    cur.execute("""
+                        SELECT item_id, name, price, category0, category1, category2, brand, condition, size, color, shipper, is_active
+                        FROM products
+                        WHERE is_active = TRUE AND item_id != %s AND (
+                            (category1 IS NOT NULL AND category1 = %s)
+                            OR (category0 IS NOT NULL AND category0 = %s)
+                            OR (brand IS NOT NULL AND brand != '__UNK__' AND brand = %s)
+                        )
+                        ORDER BY
+                            (CASE WHEN category1 IS NOT NULL AND category1 = %s THEN 2.0 ELSE 0 END +
+                             CASE WHEN category0 IS NOT NULL AND category0 = %s THEN 1.0 ELSE 0 END +
+                             CASE WHEN brand IS NOT NULL AND brand != '__UNK__' AND brand = %s THEN 1.5 ELSE 0 END) DESC,
+                            price DESC
+                        LIMIT %s
+                    """, (t_id, t_c1, t_c0, t_brand, t_c1, t_c0, t_brand, limit))
+                    cols = [desc[0] for desc in cur.description]
+                    for idx, row in enumerate(cur.fetchall()):
+                        d = dict(zip(cols, row))
+                        p = product_dict(d)
+                        p["score"] = round(1.0 - (idx * 0.05), 2)
+                        items.append(p)
+    except Exception:
+        items = []
+
+    if len(items) < limit:
+        try:
+            duck_items, _ = fetch_metadata_similar_duckdb(trigger_item_id, limit=limit)
+            existing = set(it["id"] for it in items)
+            for dit in duck_items:
+                if dit["id"] not in existing and len(items) < limit:
+                    items.append(dit)
+                    existing.add(dit["id"])
+        except Exception:
+            pass
+
+    if len(items) < limit:
+        try:
+            with psycopg.connect(dsn, connect_timeout=5) as conn:
+                with conn.cursor() as cur:
+                    existing_list = list(set([it["id"] for it in items] + [str(trigger_item_id)]))
+                    cur.execute("""
+                        SELECT item_id, name, price, category0, category1, category2, brand, condition, size, color, shipper, is_active
+                        FROM products
+                        WHERE is_active = TRUE AND item_id NOT IN (SELECT unnest(%s::text[]))
+                        ORDER BY price DESC
+                        LIMIT %s
+                    """, (existing_list, limit - len(items)))
+                    cols = [desc[0] for desc in cur.description]
+                    for idx, row in enumerate(cur.fetchall()):
+                        d = dict(zip(cols, row))
+                        p = product_dict(d)
+                        p["score"] = 0.1
+                        items.append(p)
+        except Exception:
+            pass
+
+    return items[:limit], "content_based_v1"
+
+
 def get_recommendations_postgres(dsn, context="home", trigger_item_id=None, user_id=None, session_id=None, limit=12):
     import psycopg
 
@@ -170,48 +340,105 @@ def get_recommendations_postgres(dsn, context="home", trigger_item_id=None, user
     model_used = "content_based_v1" if context in ("product_detail", "cart") else "overall_popular_v1"
     items = []
 
-    if context in ("product_detail", "cart") and trigger_item_id:
-        items, model_used = fetch_metadata_similar_duckdb(trigger_item_id, limit=limit)
+    if context == "product_detail":
+        items, model_used = fetch_detail_similar(trigger_item_id, limit=limit)
+        if len(items) < limit and trigger_item_id:
+            fast_items, _ = fetch_metadata_similar_fast(dsn, trigger_item_id, limit=limit)
+            existing = set(it["id"] for it in items)
+            for fit in fast_items:
+                if fit["id"] not in existing and len(items) < limit:
+                    items.append(fit)
+                    existing.add(fit["id"])
+    elif trigger_item_id:
+        items, model_used = fetch_metadata_similar_fast(dsn, trigger_item_id, limit=limit)
     else:
+        recent_interacted_items = []
         try:
             with psycopg.connect(dsn, connect_timeout=5) as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
-                        SELECT p.item_id, p.product_id, p.name, p.price, p.category0, p.category1, p.category2,
-                               p.brand, p.condition, p.size, p.color, p.shipper, p.is_active,
-                               COALESCE(e.event_cnt, 0) as event_cnt
-                        FROM products p
-                        LEFT JOIN (
-                            SELECT item_id, COUNT(*) as event_cnt
+                    if user_id or session_id:
+                        cur.execute("""
+                            SELECT item_id
                             FROM user_events
-                            GROUP BY item_id
-                        ) e ON p.item_id = e.item_id
-                        WHERE p.is_active = TRUE AND p.name IS NOT NULL AND p.price > 0
-                        ORDER BY event_cnt DESC, p.item_id
-                        LIMIT %s
-                    """, (limit,))
-                    rows = cur.fetchall()
-                    cols = [desc[0] for desc in cur.description]
-                    for idx, r in enumerate(rows):
-                        d = dict(zip(cols, r))
-                        p = product_dict(d)
-                        p["score"] = round(1.0 - (idx * 0.05), 2)
-                        items.append(p)
+                            WHERE (
+                                (user_id IS NOT NULL AND user_id = %s)
+                                OR (session_id IS NOT NULL AND session_id = %s)
+                                OR (metadata->>'client_session_id' = %s)
+                            )
+                            ORDER BY event_time DESC
+                            LIMIT 10
+                        """, (
+                            str(user_id) if user_id else None,
+                            str(session_id) if session_id else None,
+                            str(session_id) if session_id else None
+                        ))
+                        recent_rows = cur.fetchall()
+                        recent_interacted_items = [r[0] for r in recent_rows if r[0]]
         except Exception:
-            items = []
+            recent_interacted_items = []
 
-    if not items and trigger_item_id:
+        if recent_interacted_items:
+            latest_seed = recent_interacted_items[0]
+            rec_items, _ = fetch_metadata_similar_fast(dsn, latest_seed, limit=limit + len(recent_interacted_items))
+            interacted_set = set(recent_interacted_items)
+            filtered = [it for it in rec_items if it["id"] not in interacted_set]
+            items = filtered[:limit] if filtered else rec_items[:limit]
+            model_used = "session_personalized_v1"
+        else:
+            # Cold-start: diverse mix across top distinct categories
+            try:
+                with psycopg.connect(dsn, connect_timeout=5) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            WITH RankedProducts AS (
+                                SELECT p.item_id, p.product_id, p.name, p.price, p.category0, p.category1, p.category2,
+                                       p.brand, p.condition, p.size, p.color, p.shipper, p.is_active,
+                                       COALESCE(e.event_cnt, 0) as event_cnt,
+                                       ROW_NUMBER() OVER (
+                                           PARTITION BY COALESCE(p.category0, 'Other')
+                                           ORDER BY COALESCE(e.event_cnt, 0) DESC, p.price DESC
+                                       ) as cat_rank
+                                FROM products p
+                                LEFT JOIN (
+                                    SELECT item_id, COUNT(*) as event_cnt
+                                    FROM user_events
+                                    GROUP BY item_id
+                                ) e ON p.item_id = e.item_id
+                                WHERE p.is_active = TRUE AND p.name IS NOT NULL AND p.price > 0
+                            )
+                            SELECT item_id, product_id, name, price, category0, category1, category2,
+                                   brand, condition, size, color, shipper, is_active, event_cnt
+                            FROM RankedProducts
+                            ORDER BY cat_rank ASC, event_cnt DESC, price DESC
+                            LIMIT %s
+                        """, (limit,))
+                        rows = cur.fetchall()
+                        cols = [desc[0] for desc in cur.description]
+                        for idx, r in enumerate(rows):
+                            d = dict(zip(cols, r))
+                            p = product_dict(d)
+                            p["score"] = round(1.0 - (idx * 0.05), 2)
+                            items.append(p)
+                        model_used = "diverse_category_coldstart_v1"
+            except Exception:
+                items = []
+
+    if not items and trigger_item_id and context != "product_detail":
         items, model_used = fetch_metadata_similar_duckdb(trigger_item_id, limit=limit)
 
     # Sync recommended items to PostgreSQL & log recommendation request
     try:
         with psycopg.connect(dsn, connect_timeout=5) as conn:
             with conn.cursor() as cur:
-                # Sync product records into products table if not present
                 p_rows = []
+                seen_p_ids = set()
                 for it in items:
+                    iid = it.get("id")
+                    if not iid or iid in seen_p_ids:
+                        continue
+                    seen_p_ids.add(iid)
                     p_rows.append((
-                        it["id"], it["name"], it["price"],
+                        iid, it["name"], it["price"],
                         it.get("c0_name"), it.get("c1_name"), it.get("c2_name"),
                         it.get("brand"), it.get("condition"), it.get("size"), it.get("color"),
                         it.get("shipper"), True
@@ -231,18 +458,55 @@ def get_recommendations_postgres(dsn, context="home", trigger_item_id=None, user
                             brand = EXCLUDED.brand
                     """, p_rows)
 
-                # Log recommendation request
+                # Ensure valid user_id
+                v_user_id = None
+                if user_id:
+                    try:
+                        cur.execute("SELECT id FROM users WHERE id = %s", (str(user_id),))
+                        if cur.fetchone():
+                            v_user_id = str(user_id)
+                    except Exception:
+                        v_user_id = None
+
+                # Ensure valid session_id in user_sessions
+                v_session_id = None
+                if session_id:
+                    try:
+                        sess_uuid = str(uuid.UUID(str(session_id)))
+                        cur.execute("""
+                            INSERT INTO user_sessions (id, user_id, device_type, source)
+                            VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (id) DO NOTHING
+                        """, (sess_uuid, v_user_id, "web", context))
+                        v_session_id = sess_uuid
+                    except Exception:
+                        v_session_id = None
+
+                v_trig = None
+                if trigger_item_id:
+                    try:
+                        cur.execute("SELECT item_id FROM products WHERE item_id = %s", (str(trigger_item_id),))
+                        if cur.fetchone():
+                            v_trig = str(trigger_item_id)
+                    except Exception:
+                        v_trig = None
+
                 cur.execute("""
                     INSERT INTO recommendation_requests (
                         id, user_id, session_id, context, trigger_item_id, model_name
                     ) VALUES (%s, %s, %s, %s, %s, %s)
-                """, (req_id, user_id, session_id, context, trigger_item_id, model_used))
+                """, (req_id, v_user_id, v_session_id, context, v_trig, model_used))
 
                 rec_item_rows = []
+                seen_rec_item_ids = set()
                 for idx, item in enumerate(items):
+                    iid = item.get("id")
+                    if not iid or iid in seen_rec_item_ids:
+                        continue
+                    seen_rec_item_ids.add(iid)
                     rank_pos = idx + 1
                     score = item.get("score", 0.5)
-                    rec_item_rows.append((req_id, item["id"], rank_pos, score, model_used))
+                    rec_item_rows.append((req_id, iid, rank_pos, score, model_used))
 
                 if rec_item_rows:
                     cur.executemany("""
@@ -261,24 +525,28 @@ def get_recommendations_postgres(dsn, context="home", trigger_item_id=None, user
         "context": context,
         "trigger_item_id": trigger_item_id,
         "model_name": model_used,
-        "items": items
+        "items": attach_product_images(items, dsn)
     }
 
 
 def get_recommendations_parquet(context="home", trigger_item_id=None, limit=12):
-    if trigger_item_id and context in ("product_detail", "cart"):
+    if context == "product_detail":
+        items, model_name = fetch_detail_similar(trigger_item_id, limit=limit)
+    elif trigger_item_id and context == "cart":
         items, model_name = fetch_metadata_similar_duckdb(trigger_item_id, limit=limit)
     else:
         items, _ = fetch_metadata_similar_duckdb(trigger_item_id or "100003961", limit=limit)
         model_name = "parquet_baseline_v1"
 
+    dsn = os.environ.get("DATABASE_URL")
     return {
         "request_id": str(uuid.uuid4()),
         "context": context,
         "trigger_item_id": trigger_item_id,
         "model_name": model_name,
-        "items": items
+        "items": attach_product_images(items, dsn)
     }
+
 
 
 def get_recommendations(context="home", trigger_item_id=None, user_id=None, session_id=None, limit=12):

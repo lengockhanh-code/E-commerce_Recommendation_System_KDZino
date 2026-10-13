@@ -1,7 +1,8 @@
+
 export const runtime = "nodejs";
 
 const API_BASE = process.env.BACKEND_API_URL || "http://localhost:8000/api/v1";
-const VALID_EVENT_TYPES = new Set(["view", "click", "like", "unlike", "cart", "offer", "buy_start", "buy_comp", "view_item", "add_to_cart", "purchase"]);
+const VALID_EVENT_TYPES = new Set(["impression", "view", "click", "like", "unlike", "cart", "offer", "offer_make", "buy_start", "buy_comp", "view_item", "add_to_cart", "purchase"]);
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "event_type không hợp lệ" }, { status: 400 });
     }
 
-    // Attempt direct FastAPI event logging with user token
+    // 1. Attempt direct FastAPI event logging if service is up
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (authHeader) headers["Authorization"] = authHeader;
@@ -32,16 +33,17 @@ export async function POST(request: Request) {
           position: typeof body.position === "number" ? body.position : undefined,
           extra_data: body.metadata || body.extra_data || {}
         }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(12000),
       });
 
       if (fastApiRes.ok) {
         return Response.json(await fastApiRes.json());
       }
-      return Response.json({ error: "Chưa thể lưu tương tác" }, { status: fastApiRes.status >= 500 ? 503 : fastApiRes.status });
+      return Response.json({ error: "Chưa lưu được tương tác. Vui lòng thử lại." }, { status: fastApiRes.status >= 500 ? 503 : fastApiRes.status });
     } catch {
-      return Response.json({ error: "Dịch vụ tương tác tạm thời không khả dụng" }, { status: 503 });
+      return Response.json({ error: "Chưa thể lưu tương tác. Vui lòng thử lại." }, { status: 503 });
     }
+
   } catch {
     return Response.json({ error: "Không thể lưu tương tác" }, { status: 500 });
   }

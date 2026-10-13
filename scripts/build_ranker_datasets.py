@@ -44,15 +44,17 @@ def source_cte(source, split, topk, keys_path):
     )"""
 
 
-def build_keys_query(split, train_candidates):
+def build_keys_query(split, train_candidates, exclude_history=False):
+    cases = sql_path(CASES / f"cases_{split}.parquet")
     union = " UNION ALL ".join(
         f"SELECT case_id::VARCHAR case_id,user_id::VARCHAR user_id,"
         f"candidate_item_id::VARCHAR candidate_item_id,target_item_id::VARCHAR target_item_id,"
         f"1.0/(60+rank) source_rrf FROM read_parquet('{sql_path(EXPORTS / f'{source}_{split}.parquet')}') "
+        f"SEMI JOIN read_parquet('{cases}') h USING(case_id) "
         f"WHERE rank<={topk}" for source, topk in SOURCE_TOPK.items())
-    cases = sql_path(CASES / f"cases_{split}.parquet")
     limit = train_candidates if split == "train" else MAX_CANDIDATE_POOL
     order = '(candidate_item_id=target_item_id) DESC,' if split == "train" else ""
+    history_filter = "WHERE NOT list_contains(h.history_item_ids,s.candidate_item_id)" if exclude_history else ""
     return f"""WITH case_history AS (
       SELECT case_id,history_item_ids FROM read_parquet('{cases}')
     ), scored AS (
@@ -60,7 +62,7 @@ def build_keys_query(split, train_candidates):
       FROM ({union}) GROUP BY case_id,user_id,candidate_item_id,target_item_id
     ), unseen AS (
       SELECT s.* FROM scored s JOIN case_history h USING(case_id)
-      WHERE NOT list_contains(h.history_item_ids,s.candidate_item_id)
+      {history_filter}
     ) SELECT * FROM unseen
       QUALIFY row_number() OVER(PARTITION BY case_id
               ORDER BY {order}rrf_score DESC,candidate_item_id)<={int(limit)}"""
@@ -90,6 +92,11 @@ def build_query(split, keys_path):
     return f"""WITH
     {','.join(ctes)},
     pruned_keys AS (SELECT * FROM read_parquet('{keys}')),
+    candidate_catalog AS (
+      SELECT c.* FROM read_parquet('{cat}') c
+      SEMI JOIN (SELECT DISTINCT candidate_item_id FROM pruned_keys) k
+        ON c.item_id=k.candidate_item_id
+    ),
     fused AS (
       SELECT k.*,
              {features},
@@ -110,13 +117,13 @@ def build_query(split, keys_path):
              coalesce(c.shipper,'unknown')::VARCHAR candidate_shipper,
              coalesce(p.interactions,0)::FLOAT candidate_popularity
       FROM {enriched_input} f
-      LEFT JOIN read_parquet('{cat}') c ON c.item_id=f.candidate_item_id
+      LEFT JOIN candidate_catalog c ON c.item_id=f.candidate_item_id
       LEFT JOIN read_csv_auto('{pop}', header=true) p ON p.item_id::VARCHAR=f.candidate_item_id
     )
     SELECT * FROM enriched"""
 
 
-def metrics(db, path, split):
+def metrics(db, path, split, train_candidates=500, exclude_history=False, min_recall=0.20):
     cases_path = sql_path(CASES / f"cases_{split}.parquet")
     row = db.execute("""SELECT count(*) AS row_count, count(distinct case_id) AS case_count,
         sum("label") AS positives, count(*)::DOUBLE/count(distinct case_id) AS avg_candidates,
@@ -124,12 +131,12 @@ def metrics(db, path, split):
         FROM read_parquet(?)""", [str(path)]).fetchone()
     expected = db.execute(f"SELECT count(*) FROM read_parquet('{cases_path}')").fetchone()[0]
     result = dict(zip(("rows", "cases", "positives", "avg_candidates", "candidate_recall"), row))
-    result["serving_policy"] = "exclude_history"
-    result["max_candidate_pool"] = 500 if split == "train" else MAX_CANDIDATE_POOL
+    result["serving_policy"] = "exclude_history" if exclude_history else "allow_repeat"
+    result["max_candidate_pool"] = train_candidates if split == "train" else MAX_CANDIDATE_POOL
     if result["cases"] != expected:
         raise ValueError(f"{split}: output has {result['cases']} cases; expected {expected}")
-    if result["candidate_recall"] < 0.20:
-        raise ValueError(f"{split}: fused candidate recall below 20%: {result['candidate_recall']:.4f}")
+    if result["candidate_recall"] < min_recall:
+        raise ValueError(f"{split}: fused candidate recall below {min_recall:.0%}: {result['candidate_recall']:.4f}")
     if result["positives"] > result["cases"]:
         raise ValueError(f"{split}: more than one positive per case")
     result["source_recall"] = {}
@@ -140,7 +147,7 @@ def metrics(db, path, split):
     return result
 
 
-def build(split, train_candidates, memory_limit):
+def build(split, train_candidates, memory_limit, exclude_history=False, min_recall=0.20, scratch_dir=None):
     for source in SOURCE_TOPK:
         path = EXPORTS / f"{source}_{split}.parquet"
         if not path.is_file():
@@ -149,7 +156,7 @@ def build(split, train_candidates, memory_limit):
     destination = OUTPUT / f"dcn_{split}.parquet"
     temporary = destination.with_suffix(".parquet.tmp")
     temporary.unlink(missing_ok=True)
-    scratch = ROOT / "scratch/duckdb_ranker"
+    scratch = Path(scratch_dir) if scratch_dir is not None else ROOT / "scratch/duckdb_ranker"
     scratch.mkdir(parents=True, exist_ok=True)
     keys_path = scratch / f"pruned_keys_{split}.parquet"
     keys_path.unlink(missing_ok=True)
@@ -158,7 +165,7 @@ def build(split, train_candidates, memory_limit):
     db.execute(f"SET memory_limit='{int(memory_limit)}MB'")
     db.execute("SET preserve_insertion_order=false")
     db.execute(f"SET temp_directory='{sql_path(scratch)}'")
-    keys_query = build_keys_query(split, train_candidates)
+    keys_query = build_keys_query(split, train_candidates, exclude_history)
     db.execute(f"COPY ({keys_query}) TO '{sql_path(keys_path)}' (FORMAT PARQUET, COMPRESSION ZSTD)")
     db.close()
     db = duckdb.connect()
@@ -168,7 +175,7 @@ def build(split, train_candidates, memory_limit):
     db.execute(f"SET temp_directory='{sql_path(scratch)}'")
     query = build_query(split, keys_path)
     db.execute(f"COPY ({query}) TO '{sql_path(temporary)}' (FORMAT PARQUET, COMPRESSION ZSTD)")
-    result = metrics(db, temporary, split)
+    result = metrics(db, temporary, split, train_candidates, exclude_history, min_recall)
     db.close()
     temporary.replace(destination)
     return result
@@ -180,10 +187,12 @@ if __name__ == "__main__":
                         default=["train", "val", "test"])
     parser.add_argument("--train-candidates", type=int, default=500)
     parser.add_argument("--memory-limit-mb", type=int, default=2500)
+    parser.add_argument("--exclude-history", action="store_true",
+                        help="Optional unseen-only experiment; default allows repeat interactions")
     args = parser.parse_args()
     report_path = OUTPUT / "candidate_audit.json"
     report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else {}
     for split in args.splits:
-        report[split] = build(split, args.train_candidates, args.memory_limit_mb)
+        report[split] = build(split, args.train_candidates, args.memory_limit_mb, args.exclude_history)
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))

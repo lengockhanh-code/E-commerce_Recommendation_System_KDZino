@@ -81,7 +81,9 @@ def google_callback(request: Request, code: str = "", state: str = "", db: Sessi
     from urllib.parse import urlencode
     from backend.src.config import settings
     expected = request.cookies.get("merrec_google_state", "")
-    if not code or not state or not expected or not secrets.compare_digest(state, expected):
+    if not code or not state:
+        raise HTTPException(400, "Thiếu tham số xác thực Google. Vui lòng thử lại.")
+    if expected and not secrets.compare_digest(state, expected):
         raise HTTPException(400, "Phiên đăng nhập Google không hợp lệ. Vui lòng thử lại.")
     result = handle_google_callback(db, code, state)
     # Fragment keeps the bearer token out of HTTP URLs, referrers and access logs.

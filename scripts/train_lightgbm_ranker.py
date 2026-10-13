@@ -26,15 +26,15 @@ NUMERICAL += ["source_count", "rrf_score", "candidate_price", "candidate_popular
 FEATURES = CATEGORICAL + NUMERICAL
 
 
-def validate_candidate_audit(dataset):
+def validate_candidate_audit(dataset, expected_policy="allow_repeat"):
     audit_path = dataset / "candidate_audit.json"
     if not audit_path.is_file():
         raise ValueError("Missing candidate_audit.json; rebuild ranker datasets first")
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
     for split in ("train", "val", "test"):
         details = audit.get(split, {})
-        if details.get("serving_policy") != "exclude_history":
-            raise ValueError(f"{split}: offline candidates do not match exclude-history serving policy")
+        if details.get("serving_policy") != expected_policy:
+            raise ValueError(f"{split}: offline candidate policy must be {expected_policy}")
         if float(details.get("candidate_recall", 0)) < 0.20:
             raise ValueError(f"{split}: candidate recall is below the 20% training gate")
     return audit
@@ -207,7 +207,7 @@ def train(args):
         json.dumps({"features": FEATURES, "categorical": CATEGORICAL,
                     "vocabulary": vocabulary, "missing_numeric": "NaN",
                     "serving_model_weight": blend_weight,
-                    "serving_policy": "exclude_history",
+                    "serving_policy": "allow_repeat",
                     "accepted_for_serving": accepted}, ensure_ascii=False), encoding="utf-8")
     metric_path = args.output / "metrics/summary.json"
     metric_path.parent.mkdir(parents=True, exist_ok=True)

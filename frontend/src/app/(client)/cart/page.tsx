@@ -8,6 +8,7 @@ import { formatVND, toVND } from "@/lib/merrecData";
 import CartItemRow from "@/components/cart/CartItemRow";
 import RecommendationStrip from "@/components/recommendation-strip/RecommendationStrip";
 import BenefitsStrip from "@/components/benefits-strip/BenefitsStrip";
+import { trackEventClient } from "@/lib/recommendations-client";
 import "./cart.css";
 
 export default function CartPage() {
@@ -94,6 +95,14 @@ export default function CartPage() {
                 className="checkout-btn"
                 onClick={(e) => {
                   e.preventDefault();
+                  for (const item of cartItems) {
+                    void trackEventClient({
+                      item_id: item.product.id,
+                      event_type: "buy_start",
+                      source_page: "cart",
+                      metadata: { quantity: item.qty, price: item.product.price },
+                    });
+                  }
                   if (!user) {
                     router.push("/login?redirect=/checkout");
                     return;

@@ -8,6 +8,7 @@ from backend.src.api.orders import router as orders_router
 from backend.src.api.events import router as events_router
 from backend.src.api.profile import router as profile_router
 from backend.src.api.admin import router as admin_router
+from backend.src.api.seller import router as seller_router
 
 api_router = APIRouter()
 
@@ -18,3 +19,5 @@ api_router.include_router(orders_router)
 api_router.include_router(events_router)
 api_router.include_router(profile_router)
 api_router.include_router(admin_router)
+api_router.include_router(seller_router)
+

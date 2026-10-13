@@ -3,6 +3,7 @@
 from typing import Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from backend.src.models.orm import Order, OrderItem, generate_uuid
 from backend.src.models.schemas import OrderCreate, OrderResponse, OrderItemResponse
@@ -160,3 +161,85 @@ def get_order_by_id(db: Session, order_id: str, user_id: Optional[str] = None) -
         created_at=o.created_at,
         items=items
     )
+
+
+def get_seller_orders(db: Session, status: Optional[str] = None, query: Optional[str] = None) -> List[OrderResponse]:
+    q = db.query(Order)
+    if status and status != "all":
+        q = q.filter(Order.status == status)
+    if query:
+        pattern = f"%{query.strip()}%"
+        q = q.filter(
+            or_(
+                Order.full_name.ilike(pattern),
+                Order.email.ilike(pattern),
+                Order.phone.ilike(pattern),
+                Order.id.ilike(pattern)
+            )
+        )
+    orders = q.order_by(Order.created_at.desc()).all()
+    res = []
+    for o in orders:
+        items = [
+            OrderItemResponse(
+                id=str(it.id),
+                item_id=it.item_id,
+                product_name=it.product_name,
+                quantity=it.quantity,
+                unit_price=it.unit_price
+            ) for it in o.items
+        ]
+        res.append(
+            OrderResponse(
+                id=str(o.id),
+                user_id=str(o.user_id) if o.user_id else None,
+                full_name=o.full_name or "Khách hàng",
+                email=o.email or "",
+                phone=o.phone or "",
+                address=o.address or "",
+                city=o.city,
+                district=o.district,
+                payment_method=o.payment_method,
+                shipping_fee=o.shipping_fee,
+                total_amount=o.total_amount,
+                status=o.status,
+                created_at=o.created_at,
+                items=items
+            )
+        )
+    return res
+
+
+def update_order_status(db: Session, order_id: str, new_status: str) -> Optional[OrderResponse]:
+    order = db.query(Order).filter(Order.id == str(order_id)).first()
+    if not order:
+        return None
+    order.status = new_status
+    db.commit()
+    db.refresh(order)
+    items = [
+        OrderItemResponse(
+            id=str(it.id),
+            item_id=it.item_id,
+            product_name=it.product_name,
+            quantity=it.quantity,
+            unit_price=it.unit_price
+        ) for it in order.items
+    ]
+    return OrderResponse(
+        id=str(order.id),
+        user_id=str(order.user_id) if order.user_id else None,
+        full_name=order.full_name or "Khách hàng",
+        email=order.email or "",
+        phone=order.phone or "",
+        address=order.address or "",
+        city=order.city,
+        district=order.district,
+        payment_method=order.payment_method,
+        shipping_fee=order.shipping_fee,
+        total_amount=order.total_amount,
+        status=order.status,
+        created_at=order.created_at,
+        items=items
+    )
+

@@ -29,7 +29,7 @@ export default function ProductCard(props: ProductCardProps) {
   const name = product?.name || props.name || "Sản phẩm";
   const rawPrice = product?.price ?? props.price ?? 0;
   const priceStr = typeof rawPrice === "number" ? formatPrice(rawPrice, product?.currency) : rawPrice;
-  const image = product?.image || props.image || "/products/demo.png";
+  const image = product?.image || product?.images?.[0] || props.image || "";
   const rating = product?.rating ?? props.rating ?? 0;
   const discount = product?.discount || 0;
   const originalPrice = product?.originalPrice;
@@ -46,8 +46,6 @@ export default function ProductCard(props: ProductCardProps) {
     void trackEventClient({ item_id: id, event_type: next ? "like" : "unlike", source_page: "product_card" });
   }
 
-  if (!image) return null;
-
   return (
     <div className="product-card">
       {discount > 0 && (
@@ -58,9 +56,9 @@ export default function ProductCard(props: ProductCardProps) {
         {liked ? "♥" : "♡"}
       </button>
 
-      <Link href={`/products/${id}`} className="product-image">
-        <ProductImage key={id} id={id} name={name} src={product?.source === "merrec" ? undefined : image} />
-      </Link>
+      <div className="product-image">
+        <ProductImage id={id} name={name} src={image} sources={product?.images} href={`/products/${id}`} />
+      </div>
 
       <div className="product-info">
         <Link href={`/products/${id}`}>

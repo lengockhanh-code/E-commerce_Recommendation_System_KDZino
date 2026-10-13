@@ -5,6 +5,7 @@ import Footer from "@/components/footer/Footer";
 import { AuthProvider } from "@/lib/auth-context";
 import OnboardingGate from "@/components/onboarding-modal/OnboardingGate";
 import InteractionSync from "@/components/recommendation-strip/InteractionSync";
+import FloatingChat from "@/components/chat/FloatingChat";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <InteractionSync />
           <main>{children}</main>
           <Footer />
+          <FloatingChat />
         </AuthProvider>
       </body>
     </html>

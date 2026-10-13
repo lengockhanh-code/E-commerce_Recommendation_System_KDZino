@@ -24,6 +24,9 @@ artifacts/*
 kaggle_upload/
 training/checkpoints/
 training/runs/
+training/dcn/runs/
+training/dcn/metrics/
+training/evaluation/results/
 training/kaggle_runs/**/.ipynb_checkpoints/
 *.pt
 *.pth

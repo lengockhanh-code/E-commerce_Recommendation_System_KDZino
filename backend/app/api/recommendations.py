@@ -16,6 +16,7 @@ router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 def get_recommendations_route(
     context: str = Query("home", description="Ngữ cảnh gợi ý: home, product_detail, cart"),
     trigger_item_id: Optional[str] = Query(None, description="Mã sản phẩm đang xem hoặc sản phẩm trong giỏ"),
+    session_id: Optional[str] = Query(None, description="Mã phiên làm việc (Session UUID)"),
     limit: int = Query(12, ge=1, le=48),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -29,6 +30,7 @@ def get_recommendations_route(
         context=context,
         trigger_item_id=trigger_item_id,
         user_id=user_id,
+        session_id=session_id,
         limit=limit
     )
     return res

@@ -25,25 +25,32 @@ def personalized_feed(
     session_id: Optional[UUID] = None,
     limit: int = Query(12, ge=1, le=50),
     exclude: Optional[str] = Query(None, max_length=10000),
+    cursor: Optional[str] = Query(None, max_length=100),
+    anonymous_id: Optional[UUID] = None,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
     return recommendation_feed(db, str(current_user.id) if current_user else None,
         str(session_id) if session_id else None, context, item_id, limit,
-        [value for value in (exclude or "").split(",") if value][:100])
+        [value for value in (exclude or "").split(",") if value][:100],
+        cursor=cursor, anonymous_id=str(anonymous_id) if anonymous_id else None)
 
 
 @router.get("", response_model=RecommendationResponse)
 def recommendations_get(
     context: str = Query("home", description="Ngữ cảnh: 'home', 'product_detail', 'cart'"),
     item_id: Optional[str] = Query(None, description="Mã sản phẩm tham chiếu khi ở trang chi tiết/giỏ hàng"),
+    trigger_item_id: Optional[str] = Query(None, include_in_schema=False),
     limit: int = Query(10, ge=1, le=50, description="Số lượng gợi ý trả về"),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user)
 ):
     """Lấy danh sách gợi ý sản phẩm phù hợp cho người dùng (GET)"""
     user_id = str(current_user.id) if current_user else None
-    return get_recommendations(db, context=context, item_id=item_id, user_id=user_id, limit=limit)
+    # Backward-compatible alias for older Next.js clients. New callers use
+    # item_id, which is also the public OpenAPI field.
+    reference_item_id = item_id or trigger_item_id
+    return get_recommendations(db, context=context, item_id=reference_item_id, user_id=user_id, limit=limit)
 
 
 @router.post("", response_model=RecommendationResponse)

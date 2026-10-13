@@ -54,3 +54,13 @@ Chạy kiểm tra bộ lưu ảnh và đồng bộ các bản ghi đang chờ:
 Xem cấu trúc lưu trữ và cơ chế đồng bộ tại [database/PRODUCT_IMAGES.md](database/PRODUCT_IMAGES.md). Giữ dữ liệu SQLite khi còn bản ghi đang chờ đồng bộ.
 
 Các script chia CSV và xuất SQL của bộ resolver cũ đã được loại bỏ; website dùng luồng tìm ảnh ở trên.
+
+## Đánh giá recommendation trên nhiều item tương lai
+
+Xem [pipeline MerRec tham khảo Shopee](docs/RECOMMENDATION_PIPELINE.md) về cohort, policy cho phép tương tác lại, cách tách retrieval/ranking và giới hạn dữ liệu.
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 -m scripts.evaluate_recommendation_pipeline --output training/evaluation/results/pipeline_new_run
+```
+
+Lệnh giữ nguyên checkpoint, xác minh cache top100 của năm retriever và đánh giá DCN/LightGBM trên cùng candidate pool. Output phải là thư mục mới. Kết quả gồm số target bắt trúng, macro/micro Recall, NDCG và AUC/GAUC proxy; không thay thế log impression hay online A/B test.

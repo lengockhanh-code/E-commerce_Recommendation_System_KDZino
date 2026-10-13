@@ -73,6 +73,12 @@
 .pdp-add:hover { background: #eaf8f1; }
 .pdp-buy { background: #009559; color: white; }
 .pdp-buy:hover { background: #007d4a; }
+.pdp-secondary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+.pdp-secondary-actions button { min-height: 44px; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.pdp-chat-btn { background: #f0fdf4; color: #009359; border: 1.5px solid #a7f3d0; }
+.pdp-chat-btn:hover { background: #dcfce7; border-color: #009359; }
+.pdp-offer-btn { background: #fffbeb; color: #b45309; border: 1.5px solid #fde68a; }
+.pdp-offer-btn:hover { background: #fef3c7; border-color: #d97706; }
 .pdp-notice:empty { display: none; }
 .pdp-notice { min-height: 25px; font-size: 12px; display: flex; align-items: center; gap: 7px; color: #07834f; padding: 6px 0; flex-wrap: wrap; }
 .pdp-notice a { text-decoration: underline; }
@@ -139,3 +145,184 @@
 .pdp-summary dt { color: #7f8781; }
 .pdp-summary dd { color: #354339; overflow-wrap: anywhere; line-height: 1.65; }
 @media(max-width:760px) { .pdp-summary > div { grid-template-columns: 84px minmax(0, 1fr); } }
+
+/* ==================== SELLER / SHOP CARD (IMAGE 2) ==================== */
+.pdp-seller-box {
+  background: #ffffff;
+  border: 1px solid #edf0ed;
+  border-radius: 9px;
+  padding: 24px 28px;
+  margin: 25px 0;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.pdp-seller-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.pdp-seller-avatar-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdp-seller-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid #edf0ed;
+  background: #f8faf9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  color: #009359;
+  overflow: hidden;
+}
+
+.pdp-seller-mall-badge {
+  position: absolute;
+  bottom: -4px;
+  background: #d0011b;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.pdp-seller-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdp-seller-name-row h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.pdp-seller-status {
+  font-size: 12px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-online-dot {
+  width: 7px;
+  height: 7px;
+  background: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.pdp-seller-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-seller-chat {
+  border: 1px solid #ee4d2d;
+  background: #fff5f2;
+  color: #ee4d2d;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-seller-chat:hover {
+  background: #fee7e2;
+}
+
+.btn-seller-view {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #4b5563;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-seller-view:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.pdp-seller-divider {
+  width: 1px;
+  height: 60px;
+  background: #edf0ed;
+}
+
+.pdp-seller-stats {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 24px;
+}
+
+.pdp-seller-stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seller-stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.stat-name {
+  color: #6b7280;
+}
+
+.stat-val.highlight {
+  color: #ee4d2d;
+  font-weight: 600;
+}
+
+@media(max-width: 960px) {
+  .pdp-seller-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .pdp-seller-divider {
+    display: none;
+  }
+  .pdp-seller-stats {
+    width: 100%;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+

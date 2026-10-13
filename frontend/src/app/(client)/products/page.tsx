@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ProductCard from "@/components/productcard/ProductCard";
 import { MERREC_BRANDS, MERREC_CATEGORIES, MERREC_PRODUCTS } from "@/lib/merrecData";
+import { matchProductQuery } from "@/lib/searchMatcher";
 import "./products.css";
 
 export default function ProductsPage() {
@@ -40,15 +41,7 @@ function ProductListing() {
   // Filter products based on state
   let filtered = MERREC_PRODUCTS;
   if (searchQuery) {
-    const term = searchQuery.toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.brand.toLowerCase().includes(term) ||
-        p.c0_name.toLowerCase().includes(term) ||
-        p.c1_name.toLowerCase().includes(term) ||
-        (p.description && p.description.toLowerCase().includes(term))
-    );
+    filtered = filtered.filter((p) => matchProductQuery(p, searchQuery));
   }
   if (selectedCat !== "all") {
     filtered = filtered.filter((p) => p.c0_name.toLowerCase() === selectedCat.toLowerCase());

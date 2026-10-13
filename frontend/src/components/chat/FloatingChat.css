@@ -1,0 +1,781 @@
+/* ==================== FLOATING CHAT DOCK (SHOPEE STYLE) ==================== */
+.floating-chat-root {
+  position: fixed;
+  bottom: 0;
+  right: 24px;
+  z-index: 99999;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+/* THE DOCKED BOTTOM TAB BUTTON (Image 1) */
+.floating-chat-trigger {
+  pointer-events: auto;
+  background: #ee4d2d;
+  color: #ffffff;
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  padding: 8px 18px 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, transform 0.15s;
+  position: relative;
+  user-select: none;
+}
+
+.floating-chat-trigger:hover {
+  background: #d73211;
+}
+
+.floating-chat-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-chat-label {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.floating-chat-badge {
+  position: absolute;
+  top: -8px;
+  right: 6px;
+  background: #d0011b;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.floating-chat-arrow {
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ==================== EXPANDED CHAT WINDOW ==================== */
+.floating-chat-window {
+  pointer-events: auto;
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 80px);
+  background: #ffffff;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.18);
+  border: 1px solid #e5ece7;
+  border-bottom: 0;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  overflow: hidden;
+  animation: slideUpChat 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpChat {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== CỘT TRÁI: DANH SÁCH CHAT ==================== */
+.docked-chat-sidebar {
+  background: #f8faf9;
+  border-right: 1px solid #e5ece7;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.docked-sidebar-header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eef2ef;
+  background: #ffffff;
+}
+
+.docked-sidebar-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.docked-sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.docked-sidebar-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.docked-sidebar-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.docked-conv-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.docked-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f4f1;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.docked-conv-item:hover {
+  background: #f0f7f3;
+}
+
+.docked-conv-item.active {
+  background: #e8f5ed;
+}
+
+.docked-avatar-box {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.docked-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e1efe6;
+  color: #009359;
+  font-weight: 700;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.docked-avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.docked-online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 9px;
+  height: 9px;
+  background: #10b981;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+}
+
+.docked-conv-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.docked-conv-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.docked-conv-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docked-conv-time {
+  font-size: 10.5px;
+  color: #9ca3af;
+}
+
+.docked-conv-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.docked-conv-msg {
+  font-size: 11.5px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docked-conv-unread {
+  background: #ee4d2d;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ==================== CỘT PHẢI: KHUNG CHAT VỚI NGƯỜI BÁN ==================== */
+.docked-chat-main {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.docked-chat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef2ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+}
+
+.docked-header-seller {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.docked-seller-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.docked-seller-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.docked-seller-status {
+  font-size: 11px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docked-seller-status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.docked-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docked-window-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.docked-window-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* PINNED PRODUCT IN DOCKED CHAT */
+.docked-pinned-product {
+  padding: 8px 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #eef2ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.docked-pinned-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.docked-pinned-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f3f4f6;
+  border: 1px solid #e5ece7;
+}
+
+.docked-pinned-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.docked-pinned-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.docked-pinned-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ee4d2d;
+}
+
+.docked-pinned-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-docked-buy {
+  border: 1px solid #009359;
+  background: #009359;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-docked-offer {
+  border: 1px solid #ee4d2d;
+  background: #fff5f2;
+  color: #ee4d2d;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-docked-offer:hover {
+  background: #fee7e2;
+}
+
+/* DOCKED MESSAGES BODY */
+.docked-messages-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafbf9;
+}
+
+.docked-msg-row {
+  display: flex;
+  width: 100%;
+}
+
+.docked-msg-row.buyer {
+  justify-content: flex-end;
+}
+
+.docked-msg-row.seller {
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.docked-seller-avt {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e1efe6;
+  color: #009359;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.docked-bubble-buyer {
+  background: #e6f7ef;
+  color: #064e3b;
+  padding: 8px 12px;
+  border-radius: 12px 12px 2px 12px;
+  max-width: 80%;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.docked-bubble-seller {
+  background: #ffffff;
+  border: 1px solid #e5ece7;
+  color: #1f2937;
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 2px;
+  max-width: 80%;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* OFFER CARD IN DOCKED CHAT */
+.docked-offer-card {
+  background: #f0fdf4;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-width: 85%;
+  width: 100%;
+}
+
+.docked-offer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #009359;
+  margin-bottom: 6px;
+}
+
+.docked-offer-status {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.docked-offer-body {
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
+}
+
+.docked-offer-price-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.docked-offer-bid {
+  font-weight: 700;
+  color: #ee4d2d;
+}
+
+/* COUNTER OFFER CARD */
+.docked-counter-card {
+  background: #fff5f2;
+  border: 1.5px solid #fecdd3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-width: 85%;
+  width: 100%;
+}
+
+.docked-counter-header {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ee4d2d;
+  margin-bottom: 6px;
+}
+
+.docked-counter-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-docked-accept {
+  border: 0;
+  background: #009359;
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-docked-negotiate {
+  border: 1px solid #ee4d2d;
+  background: #ffffff;
+  color: #ee4d2d;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* DOCKED INPUT BAR */
+.docked-input-bar {
+  padding: 8px 10px;
+  border-top: 1px solid #eef2ef;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+}
+
+.docked-input-field {
+  flex: 1;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 17px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.docked-input-field:focus {
+  border-color: #009359;
+}
+
+.docked-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0;
+  background: #009359;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.docked-offer-btn {
+  border: 1px solid #ee4d2d;
+  background: #fff5f2;
+  color: #ee4d2d;
+  padding: 6px 10px;
+  border-radius: 17px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.docked-offer-btn:hover {
+  background: #fee7e2;
+}
+
+/* ==================== OFFER MODAL IN FLOATING CHAT ==================== */
+.docked-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.docked-modal-card {
+  background: #ffffff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 360px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.docked-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.docked-modal-header h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.docked-modal-close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.docked-quick-chips {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.docked-chip-btn {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.docked-chip-btn:hover {
+  border-color: #ee4d2d;
+  color: #ee4d2d;
+}
+
+.docked-chip-btn.active {
+  background: #ee4d2d;
+  border-color: #ee4d2d;
+  color: #ffffff;
+}
+
+.docked-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.docked-form-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.docked-form-field input,
+.docked-form-field textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.docked-form-field input:focus,
+.docked-form-field textarea:focus {
+  border-color: #ee4d2d;
+}
+
+.docked-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-docked-cancel {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-docked-submit {
+  border: 0;
+  background: #ee4d2d;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-docked-submit:hover {
+  background: #d73211;
+}
+
+@media (max-width: 680px) {
+  .floating-chat-root {
+    right: 8px;
+  }
+  .floating-chat-window {
+    grid-template-columns: 1fr;
+    width: calc(100vw - 16px);
+    height: 480px;
+  }
+  .docked-chat-sidebar {
+    display: none;
+  }
+}

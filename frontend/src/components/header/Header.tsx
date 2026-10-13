@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth-context";
+import { formatPrice } from "@/lib/merrecData";
+import { MessageSquare } from "lucide-react";
 import "./Header.css";
 import {
   UserIcon,
@@ -13,6 +15,16 @@ import {
   HeartIcon,
   SearchIcon,
 } from "@/components/icons/HeaderIcons";
+
+interface SearchSuggestionProduct {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  category: string;
+  brand: string;
+}
 
 export default function Header() {
   const pathname = usePathname();
@@ -28,6 +40,15 @@ export default function Header() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Live search state
+  const [searchResults, setSearchResults] = useState<SearchSuggestionProduct[]>([]);
+  const [searchCategories, setSearchCategories] = useState<string[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const q = new URLSearchParams(window.location.search).get("q");
@@ -35,8 +56,71 @@ export default function Header() {
     }
   }, [pathname]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Debounced live search autocomplete
+  useEffect(() => {
+    const query = searchTerm.trim();
+    if (!query) {
+      setSearchResults([]);
+      setSearchCategories([]);
+      setSearchTotal(0);
+      setSearchDropdownOpen(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Search failed");
+          return res.json();
+        })
+        .then((data) => {
+          setSearchResults(data.products || []);
+          setSearchCategories(data.categories || []);
+          setSearchTotal(data.total || 0);
+          setSearchDropdownOpen(true);
+        })
+        .catch((err) => {
+          console.warn("Live search error:", err);
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Click outside to close live search dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(target) &&
+        (!mobileSearchContainerRef.current || !mobileSearchContainerRef.current.contains(target))
+      ) {
+        setSearchDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSearchDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSearchDropdownOpen(false);
     const query = searchTerm.trim();
     if (query) {
       router.push(`/products?q=${encodeURIComponent(query)}`);
@@ -89,6 +173,10 @@ export default function Header() {
     }
   };
 
+  if (pathname.startsWith("/seller")) {
+    return null;
+  }
+
   return (
     <header className="header">
       {/* MAIN HEADER - Row 1 */}
@@ -105,18 +193,118 @@ export default function Header() {
         </Link>
 
         {/* SEARCH - Hiện trên Desktop */}
-        <form className="search desktop-search" onSubmit={handleSearchSubmit}>
-          <input
-            type="text"
-            aria-label="Tìm kiếm sản phẩm"
-            placeholder="Tìm kiếm sản phẩm, thương hiệu, danh mục..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button type="submit" className="search-btn" aria-label="Tìm kiếm">
-            <SearchIcon />
-          </button>
-        </form>
+        <div className="search-container desktop-search-container" ref={searchContainerRef}>
+          <form className="search desktop-search" onSubmit={handleSearchSubmit}>
+            <input
+              type="text"
+              aria-label="Tìm kiếm sản phẩm"
+              placeholder="Tìm kiếm sản phẩm, thương hiệu, danh mục..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (e.target.value.trim()) setSearchDropdownOpen(true);
+              }}
+              onFocus={() => {
+                if (searchTerm.trim()) setSearchDropdownOpen(true);
+              }}
+            />
+            <button type="submit" className="search-btn" aria-label="Tìm kiếm">
+              <SearchIcon />
+            </button>
+          </form>
+
+          {/* AUTOCOMPLETE DROPDOWN */}
+          {searchDropdownOpen && searchTerm.trim() && (
+            <div className="search-dropdown" onClick={(e) => e.stopPropagation()}>
+              <div className="search-dropdown-header">
+                <span>
+                  Gợi ý cho &quot;<strong>{searchTerm}</strong>&quot;
+                </span>
+                {isSearching ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span className="search-spinner" />
+                    <span>Đang tìm...</span>
+                  </div>
+                ) : (
+                  <span>{searchTotal} kết quả</span>
+                )}
+              </div>
+
+              {isSearching && searchResults.length === 0 ? (
+                <div className="search-dropdown-loading">
+                  <span className="search-spinner" />
+                  <span>Đang tìm kiếm sản phẩm...</span>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="search-dropdown-empty">
+                  Không tìm thấy sản phẩm phù hợp với &quot;{searchTerm}&quot;.
+                  <br />
+                  <small style={{ color: "#9ca3af", marginTop: "4px", display: "inline-block" }}>
+                    Thử tìm với từ khóa khác (áo, giày, sách, balo, tai nghe...)
+                  </small>
+                </div>
+              ) : (
+                <>
+                  <div className="search-dropdown-list">
+                    {searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.id}`}
+                        className="search-dropdown-item"
+                        onClick={() => setSearchDropdownOpen(false)}
+                      >
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="search-dropdown-img"
+                        />
+                        <div className="search-dropdown-info">
+                          <div className="search-dropdown-name">{product.name}</div>
+                          <div className="search-dropdown-meta">
+                            <span className="search-dropdown-cat-badge">{product.category}</span>
+                            {product.brand && <span>• {product.brand}</span>}
+                          </div>
+                        </div>
+                        <div className="search-dropdown-price">
+                          {formatPrice(product.price)}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {searchCategories.length > 0 && (
+                    <div className="search-dropdown-categories">
+                      <span style={{ fontSize: "11.5px", color: "#64748b" }}>Danh mục gợi ý:</span>
+                      {searchCategories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          className="search-dropdown-cat-chip"
+                          onClick={() => {
+                            setSearchDropdownOpen(false);
+                            router.push(`/products?q=${encodeURIComponent(searchTerm.trim())}&category=${encodeURIComponent(cat)}`);
+                          }}
+                        >
+                          🔍 {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="search-dropdown-footer">
+                    <button
+                      type="button"
+                      className="search-dropdown-footer-btn"
+                      onClick={() => handleSearchSubmit()}
+                    >
+                      Xem tất cả {searchTotal > 0 ? `${searchTotal} ` : ""}kết quả cho &quot;{searchTerm}&quot; →
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ACTIONS */}
         <div className="actions">
@@ -239,6 +427,17 @@ export default function Header() {
             )}
           </div>
 
+          {/* TIN NHẮN (CHAT) */}
+          <Link href="/chat" className="action-item action-icon-only" title="Tin nhắn">
+            <span className="icon action-icon-wrapper">
+              <MessageSquare size={22} color="#088751" />
+              <span className="icon-badge">2</span>
+            </span>
+            <div className="action-text">
+              <p>Tin nhắn</p>
+            </div>
+          </Link>
+
           {/* YÊU THÍCH (WISHLIST) */}
           <Link href="/profile/favorites" className="action-item action-icon-only">
             <span className="icon action-icon-wrapper">
@@ -278,18 +477,94 @@ export default function Header() {
           </span>
         </button>
 
-        <form className="search mobile-search" onSubmit={handleSearchSubmit}>
-          <input
-            type="text"
-            aria-label="Tìm kiếm sản phẩm"
-            placeholder="Tìm kiếm sản phẩm, thương hiệu, danh mục..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button type="submit" className="search-btn" aria-label="Tìm kiếm">
-            <SearchIcon />
-          </button>
-        </form>
+        <div className="search-container mobile-search-container" ref={mobileSearchContainerRef}>
+          <form className="search mobile-search" onSubmit={handleSearchSubmit}>
+            <input
+              type="text"
+              aria-label="Tìm kiếm sản phẩm"
+              placeholder="Tìm kiếm sản phẩm, thương hiệu, danh mục..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (e.target.value.trim()) setSearchDropdownOpen(true);
+              }}
+              onFocus={() => {
+                if (searchTerm.trim()) setSearchDropdownOpen(true);
+              }}
+            />
+            <button type="submit" className="search-btn" aria-label="Tìm kiếm">
+              <SearchIcon />
+            </button>
+          </form>
+
+          {/* MOBILE AUTOCOMPLETE DROPDOWN */}
+          {searchDropdownOpen && searchTerm.trim() && (
+            <div className="search-dropdown" onClick={(e) => e.stopPropagation()}>
+              <div className="search-dropdown-header">
+                <span>
+                  Gợi ý cho &quot;<strong>{searchTerm}</strong>&quot;
+                </span>
+                {isSearching ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span className="search-spinner" />
+                    <span>Đang tìm...</span>
+                  </div>
+                ) : (
+                  <span>{searchTotal} kết quả</span>
+                )}
+              </div>
+
+              {isSearching && searchResults.length === 0 ? (
+                <div className="search-dropdown-loading">
+                  <span className="search-spinner" />
+                  <span>Đang tìm kiếm...</span>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="search-dropdown-empty">
+                  Không tìm thấy sản phẩm cho &quot;{searchTerm}&quot;.
+                </div>
+              ) : (
+                <>
+                  <div className="search-dropdown-list">
+                    {searchResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.id}`}
+                        className="search-dropdown-item"
+                        onClick={() => setSearchDropdownOpen(false)}
+                      >
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="search-dropdown-img"
+                        />
+                        <div className="search-dropdown-info">
+                          <div className="search-dropdown-name">{product.name}</div>
+                          <div className="search-dropdown-meta">
+                            <span className="search-dropdown-cat-badge">{product.category}</span>
+                          </div>
+                        </div>
+                        <div className="search-dropdown-price">
+                          {formatPrice(product.price)}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+
+                  <div className="search-dropdown-footer">
+                    <button
+                      type="button"
+                      className="search-dropdown-footer-btn"
+                      onClick={() => handleSearchSubmit()}
+                    >
+                      Xem tất cả kết quả →
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* NAVBAR */}

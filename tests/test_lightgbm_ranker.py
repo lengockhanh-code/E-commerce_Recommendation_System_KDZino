@@ -63,7 +63,7 @@ class LightGBMRankerTests(unittest.TestCase):
                 split: {"candidate_recall": 0.5, "serving_policy": "include_history"}
                 for split in ("train", "val", "test")
             }), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "exclude-history"):
+            with self.assertRaisesRegex(ValueError, "allow_repeat"):
                 validate_candidate_audit(path)
 
 

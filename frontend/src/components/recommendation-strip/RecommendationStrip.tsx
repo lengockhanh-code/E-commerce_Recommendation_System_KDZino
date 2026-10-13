@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { LoaderCircle } from "lucide-react";
 import ProductCard from "@/components/productcard/ProductCard";
 import { type Product } from "@/lib/merrecData";
-import { fetchRecommendationsClient, trackEventClient } from "@/lib/recommendations-client";
-import "./RecommendationStrip.css";
-import Link from "next/link";
+import { fetchRecommendationsClient, rememberRecommendation, trackEventClient } from "@/lib/recommendations-client";
 import { useAuth } from "@/lib/auth-context";
+import "./RecommendationStrip.css";
 
 interface RecommendationStripProps {
   title?: string;
@@ -16,172 +17,168 @@ interface RecommendationStripProps {
   limit?: number;
   className?: string;
 }
+interface FeedCard { product: Product; requestId: string; position: number }
 
-export default function RecommendationStrip({
-  title = "✨ Gợi ý dành riêng cho bạn",
-  context,
-  triggerItemId = null,
-  excludeItemIds = [],
-  limit = 12,
-  className = "",
-}: RecommendationStripProps) {
+export default function RecommendationStrip({ title = "Gợi ý dành riêng cho bạn", context,
+  triggerItemId = null, excludeItemIds = [], limit = 12, className = "" }: RecommendationStripProps) {
   const { user, isLoading: authLoading } = useAuth();
-  const [items, setItems] = useState<(Product & { score?: number })[]>([]);
-  const [requestId, setRequestId] = useState<string | null>(null);
-  const [modelName, setModelName] = useState<string>("");
+  const [cards, setCards] = useState<FeedCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [currentLimit, setCurrentLimit] = useState(limit);
-  const [degraded, setDegraded] = useState(false);
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const refresh = () => { clearTimeout(timer); timer = setTimeout(() => setAttempt((value) => value + 1), 500); };
-    window.addEventListener("merrec:preferences-changed", refresh);
-    window.addEventListener("merrec:interaction-saved", refresh);
-    return () => { clearTimeout(timer); window.removeEventListener("merrec:preferences-changed", refresh); window.removeEventListener("merrec:interaction-saved", refresh); };
-  }, []);
-
+  const [displayLimit, setDisplayLimit] = useState(limit);
+  const cursor = useRef<string | null>(null);
+  const busy = useRef(false);
+  const generation = useRef(0);
+  const controller = useRef<AbortController | null>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const grid = useRef<HTMLDivElement>(null);
+  const impressions = useRef(new Set<string>());
+  const cardsRef = useRef<FeedCard[]>([]);
+  const lastLoadScroll = useRef(0);
   const excludeKey = excludeItemIds.join(",");
+  const home = context === "home";
 
-  // Reset states when context or triggerItemId or excludeKey changes
-  useEffect(() => {
-    setItems([]);
-    setCurrentLimit(limit);
-    setLoading(true);
+  const load = useCallback(async (append: boolean) => {
+    if (busy.current || authLoading) return;
+    busy.current = true;
+    const current = generation.current;
+    const previousCursor = append ? cursor.current : null;
+    const abort = new AbortController();
+    controller.current = abort;
+    const startedAt = performance.now();
+    if (append) setLoadingMore(true); else { setLoading(true); setCards([]); cardsRef.current = []; }
     setError(null);
-  }, [context, triggerItemId, excludeKey, limit, user?.id]);
+    try {
+      const data = await fetchRecommendationsClient(context, triggerItemId, home ? limit : displayLimit,
+        excludeKey ? excludeKey.split(",") : [], { cursor: previousCursor, signal: abort.signal });
+      // Keep the progress indicator perceptible even for cached feed pages.
+      if (append) await new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(0, 450 - (performance.now() - startedAt))));
+      if (current !== generation.current || abort.signal.aborted) return;
+      if (append && data.has_more && data.next_cursor === previousCursor) throw new Error("Chưa tải được gợi ý tiếp theo. Vui lòng thử lại.");
+      const seen = new Set(append ? cardsRef.current.map((card) => card.product.id) : []);
+      const incoming = data.items.filter((product) => {
+        if (seen.has(product.id)) return false;
+        seen.add(product.id); return true;
+      }).map((product, index) => ({ product, requestId: data.request_id, position: product.position ?? index + 1 }));
+      cardsRef.current = append ? [...cardsRef.current, ...incoming] : incoming;
+      setCards(cardsRef.current);
+      lastLoadScroll.current = window.scrollY;
+      cursor.current = data.next_cursor ?? null;
+      setHasMore(home ? Boolean(data.has_more && data.next_cursor) : incoming.length >= displayLimit && displayLimit < 36);
+    } catch (failure) {
+      if (current === generation.current && !abort.signal.aborted) {
+        setError(failure instanceof Error ? failure.message : "Chưa tải được gợi ý. Vui lòng thử lại.");
+      }
+    } finally {
+      if (current === generation.current) { busy.current = false; setLoading(false); setLoadingMore(false); }
+    }
+  }, [authLoading, context, displayLimit, excludeKey, home, limit, triggerItemId]);
 
   useEffect(() => {
-    if (authLoading) return;
-    let active = true;
+    generation.current += 1;
+    busy.current = false;
+    cursor.current = null;
+    lastLoadScroll.current = window.scrollY;
+    impressions.current.clear();
+    const timer = window.setTimeout(() => { void load(false); }, 0);
+    return () => { window.clearTimeout(timer); generation.current += 1; controller.current?.abort(); busy.current = false; };
+  }, [load, attempt, user?.id]);
 
-    fetchRecommendationsClient(context, triggerItemId, currentLimit, excludeItemIds)
-      .then((data) => {
-        if (!active) return;
-        const filteredItems = excludeItemIds.length > 0
-          ? (data.items || []).filter((it) => !excludeItemIds.includes(it.id))
-          : data.items || [];
-        setItems(filteredItems);
-        setRequestId(data.request_id);
-        setModelName(data.model_name);
-        setDegraded(Boolean(data.degraded));
-        setError(null);
-        setLoading(false);
-        setLoadingMore(false);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setItems([]);
-        setError(err instanceof Error && err.message.includes("Tương tác chưa được lưu")
-          ? err.message : "Chưa tải được danh sách gợi ý. Vui lòng thử lại.");
-        setLoading(false);
-        setLoadingMore(false);
-      });
+  useEffect(() => {
+    const refresh = () => setAttempt((value) => value + 1);
+    window.addEventListener("merrec:preferences-changed", refresh);
+    if (!home) window.addEventListener("merrec:interaction-saved", refresh);
+    return () => { window.removeEventListener("merrec:preferences-changed", refresh); window.removeEventListener("merrec:interaction-saved", refresh); };
+  }, [home]);
 
-    return () => {
-      active = false;
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!home || !node || !hasMore || loading || loadingMore || error) return;
+    const loadAtBottom = () => {
+      const bounds = node.getBoundingClientRect();
+      if (window.scrollY > lastLoadScroll.current + 8 && bounds.top < window.innerHeight && bounds.bottom > 0) {
+        lastLoadScroll.current = window.scrollY;
+        void load(true);
+      }
     };
-  }, [context, triggerItemId, excludeKey, currentLimit, attempt, user?.id, authLoading]);
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadAtBottom();
+    }, { threshold: 0 });
+    observer.observe(node);
+    window.addEventListener("scroll", loadAtBottom, { passive: true });
+    return () => { observer.disconnect(); window.removeEventListener("scroll", loadAtBottom); };
+  }, [home, cards.length, hasMore, loading, loadingMore, error, load]);
 
-  const handleProductClick = (product: Product, position: number) => {
-    trackEventClient({
-      item_id: product.id,
-      event_type: "click",
-      source_page: context,
-      recommendation_request_id: requestId || undefined,
-      position: position + 1,
-    });
+  const markImpression = useCallback((card: FeedCard) => {
+    if (context !== "home") return;
+    const key = card.requestId + ":" + card.product.id;
+    rememberRecommendation(card.product.id, card.requestId, card.position);
+    if (impressions.current.has(key)) return;
+    impressions.current.add(key);
+    void trackEventClient({ item_id: card.product.id, event_type: "impression", source_page: context,
+      recommendation_request_id: card.requestId, position: card.position });
+  }, [context]);
+
+  useEffect(() => {
+    if (!home || !grid.current) return;
+    const timers = new Map<Element, ReturnType<typeof setTimeout>>();
+    const visible = new Set<Element>();
+    const schedule = (target: Element) => {
+      if (timers.has(target)) return;
+      timers.set(target, setTimeout(() => {
+        timers.delete(target);
+        const card = cardsRef.current[Number((target as HTMLElement).dataset.recIndex)];
+        if (card && visible.has(target) && document.visibilityState === "visible") markImpression(card);
+      }, 1000));
+    };
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio >= .5) { visible.add(entry.target); schedule(entry.target); }
+        else { visible.delete(entry.target); const timer = timers.get(entry.target); if (timer) clearTimeout(timer); timers.delete(entry.target); }
+      }
+    }, { threshold: .5 });
+    grid.current.querySelectorAll("[data-rec-index]").forEach((node) => observer.observe(node));
+    const visibility = () => {
+      timers.forEach(clearTimeout); timers.clear();
+      if (document.visibilityState === "visible") visible.forEach(schedule);
+    };
+    document.addEventListener("visibilitychange", visibility);
+    return () => { observer.disconnect(); timers.forEach(clearTimeout); document.removeEventListener("visibilitychange", visibility); };
+  }, [cards, home, markImpression]);
+
+  const retry = () => {
+    if (error?.includes("hết hạn")) setAttempt((value) => value + 1);
+    else void load(cards.length > 0 && home);
   };
 
-  const handleRetry = () => {
-    setLoading(true);
-    setError(null);
-    setAttempt((prev) => prev + 1);
-  };
-
-  const handleLoadMore = () => {
-    setLoadingMore(true);
-    setCurrentLimit((prev) => prev + 12);
-  };
-
-  return (
-    <section className={`recommendation-strip-section ${className}`}>
-      <div className="rec-section-header">
-        <div className="rec-title-group">
-          <h2 className="rec-main-title">{title}</h2>
-          {context === "home" && user && <Link href="/onboarding">Điều chỉnh sở thích</Link>}
-          {modelName && <p className="rec-model-status" role="status">
-            Xếp hạng: {modelName.endsWith("/dcn") ? "DCN" : "tín hiệu sản phẩm và tương tác"}
-          </p>}
-          {degraded && <p role="status">Một phần gợi ý nâng cao tạm thời chưa khả dụng. Đang dùng các tín hiệu hiện có.</p>}
-        </div>
-      </div>
-
-      {loading && items.length === 0 && (
-        <div className="products-grid-6">
-          {Array.from({ length: Math.min(currentLimit, 12) }).map((_, idx) => (
-            <div key={idx} className="rec-card-skeleton" />
-          ))}
-        </div>
-      )}
-
-      {!loading && error && items.length === 0 && (
-        <div className="rec-error-state" role="alert">
-          <p>{error}</p>
-          <button className="rec-retry-btn" onClick={handleRetry}>
-            Thử lại
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && items.length === 0 && (
-        <div className="rec-empty-state">
-          <p>Chưa có sản phẩm gợi ý phù hợp cho mục này.</p>
-        </div>
-      )}
-
-      {items.length > 0 && (
-        <>
-          <div className="products-grid-6">
-            {items.map((product, index) => (
-              <div
-                key={`${requestId || "rec"}-${product.id}-${index}`}
-                onClick={() => handleProductClick(product, index)}
-              >
-                <ProductCard product={product} />
-              </div>
-            ))}
-            {loadingMore &&
-              Array.from({ length: 6 }).map((_, idx) => (
-                <div key={`more-skel-${idx}`} className="rec-card-skeleton" />
-              ))}
-          </div>
-
-          {currentLimit < 36 && items.length >= currentLimit && (
-            <div style={{ textAlign: "center", marginTop: "20px" }}>
-              <button
-                type="button"
-                className="rec-retry-btn"
-                style={{
-                  background: loadingMore ? "#f5f5f5" : "#f0f8f3",
-                  color: loadingMore ? "#888888" : "#008751",
-                  border: loadingMore ? "1px solid #cccccc" : "1px solid #008751",
-                  padding: "10px 24px",
-                  borderRadius: "8px",
-                  fontWeight: 600,
-                  cursor: loadingMore ? "not-allowed" : "pointer",
-                }}
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? "⏳ Đang tải thêm sản phẩm..." : "Xem thêm sản phẩm gợi ý ↓"}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </section>
-  );
+  return <section className={"recommendation-strip-section " + className} aria-busy={loading || loadingMore}>
+    <div className="rec-section-header"><div className="rec-title-group">
+      <h2 className="rec-main-title">{title}</h2>
+      {home && user && <Link href="/onboarding">Điều chỉnh sở thích</Link>}
+    </div></div>
+    {loading && cards.length === 0 && <div className="products-grid-6" aria-label="Đang tải gợi ý">
+      {Array.from({ length: Math.min(limit, 12) }, (_, index) => <div key={index} className="rec-card-skeleton" />)}
+    </div>}
+    {cards.length > 0 && <div className="products-grid-6" ref={grid}>
+      {cards.map((card, index) => <div key={card.requestId + ":" + card.product.id} data-rec-index={index}
+        onClick={(event) => {
+          if (!(event.target as Element).closest("a")) return;
+          markImpression(card);
+          void trackEventClient({ item_id: card.product.id, event_type: "click", source_page: context,
+            ...(home ? { recommendation_request_id: card.requestId, position: card.position } : {}) });
+        }}><ProductCard product={card.product} /></div>)}
+    </div>}
+    {error && <div className="rec-error-state" role="alert"><p>{error}</p>
+      <button type="button" className="rec-retry-btn" onClick={retry}>{error.includes("hết hạn") ? "Tải lại gợi ý" : "Thử lại"}</button>
+    </div>}
+    {!loading && !error && cards.length === 0 && <div className="rec-empty-state">Chưa có sản phẩm gợi ý phù hợp.</div>}
+    {home && hasMore && <div ref={sentinel} className="rec-load-sentinel">
+      {loadingMore && <div className="rec-loading-more" role="status" aria-label="Đang tải gợi ý"><LoaderCircle size={24} className="rec-spinner" aria-hidden="true" /></div>}
+    </div>}
+    {!home && hasMore && !loading && !error && <button type="button" className="rec-retry-btn" onClick={() => setDisplayLimit((value) => Math.min(value + 12, 36))}>Xem thêm sản phẩm</button>}
+    {home && cards.length > 0 && !hasMore && !loading && !error && <p className="rec-feed-end">Chưa có thêm sản phẩm gợi ý phù hợp.</p>}
+  </section>;
 }

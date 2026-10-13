@@ -193,6 +193,13 @@ CREATE TABLE IF NOT EXISTS products (
 
     shipper TEXT,
 
+    description TEXT,
+    original_price DOUBLE PRECISION,
+    stock INTEGER DEFAULT 100,
+    sku TEXT,
+    weight INTEGER,
+    dimensions TEXT,
+
     last_seen_ts TIMESTAMP,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -286,6 +293,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     max_price DOUBLE PRECISION,
 
     onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    categories JSON NOT NULL DEFAULT '[]'::json,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -512,8 +520,11 @@ CREATE TABLE IF NOT EXISTS user_events (
     CONSTRAINT chk_event_type
         CHECK (
             event_type IN (
+                'impression',
                 'view',
+                'click',
                 'like',
+                'unlike',
                 'cart',
                 'offer',
                 'buy_start',
@@ -625,6 +636,14 @@ CREATE TABLE IF NOT EXISTS orders (
     -- Snapshot địa chỉ lúc đặt hàng.
     -- Không phụ thuộc việc user sửa địa chỉ sau này.
     shipping_address JSONB,
+
+    full_name VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
+    city VARCHAR(100),
+    district VARCHAR(100),
+    shipping_fee DOUBLE PRECISION DEFAULT 0,
 
     payment_method VARCHAR(50),
 

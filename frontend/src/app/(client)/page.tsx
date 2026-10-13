@@ -125,8 +125,9 @@ function HomeContent() {
         {/* GỢI Ý DÀNH RIÊNG CHO BẠN (MERREC AI RECOMMENDATIONS) SECTION */}
         <RecommendationStrip
           context="home"
-          title="✨ Gợi ý dành riêng cho bạn"
+          title="Gợi ý dành riêng cho bạn"
           limit={12}
+          excludeItemIds={filteredProducts.slice(0, 12).map((p) => p.id)}
         />
       </div>
     </div>

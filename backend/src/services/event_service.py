@@ -4,7 +4,7 @@ import datetime
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
-from backend.src.models.orm import UserEvent, UserSession, RecommendationRequest, Product, ProductImage, generate_uuid
+from backend.src.models.orm import UserEvent, UserSession, RecommendationRequest, RecommendationItem, Product, ProductImage, generate_uuid
 from backend.src.models.schemas import EventCreate, EventResponse
 
 
@@ -20,7 +20,12 @@ def ensure_user_session(db: Session, session_id: str, user_id: Optional[str]) ->
         except IntegrityError:
             pass  # A concurrent request may have created this session.
         browsing = db.get(UserSession, session_id)
-    if browsing is None or browsing.user_id != user_id:
+    if browsing is None:
+        raise HTTPException(404, "Không tìm thấy phiên tương tác")
+    if browsing.user_id is None and user_id is not None:
+        browsing.user_id = user_id
+        db.flush()
+    elif browsing.user_id != user_id and user_id is not None:
         raise HTTPException(403, "Phiên tương tác không thuộc tài khoản này")
     return browsing
 
@@ -28,12 +33,27 @@ def ensure_user_session(db: Session, session_id: str, user_id: Optional[str]) ->
 def log_user_event(db: Session, data: EventCreate, user_id: Optional[str] = None) -> EventResponse:
     from fastapi import HTTPException
     from sqlalchemy.exc import IntegrityError
+    if data.event_type == "impression" and (not data.recommendation_request_id or not data.position):
+        raise HTTPException(422, "Lượt hiển thị cần có yêu cầu gợi ý và vị trí sản phẩm.")
     if data.session_id:
         ensure_user_session(db, str(data.session_id), user_id)
     if data.recommendation_request_id:
         request = db.get(RecommendationRequest, str(data.recommendation_request_id))
         if request is None or request.user_id != user_id or (user_id is None and request.session_id != str(data.session_id)):
             raise HTTPException(403, "Yêu cầu gợi ý không thuộc phiên này")
+        rec = db.get(RecommendationItem, (str(data.recommendation_request_id), data.item_id))
+        if rec is None or data.position != rec.rank_position:
+            raise HTTPException(422, "Sản phẩm hoặc vị trí không thuộc danh sách gợi ý.")
+        from backend.src.services.recommendation_experiment import parse_experiment
+        metadata = dict(data.extra_data or {})
+        metadata.pop("recommendation_experiment", None)
+        experiment = parse_experiment(request.model_name)
+        if experiment:
+            metadata["recommendation_experiment"] = experiment
+        data.extra_data = metadata
+        if data.event_type == "impression":
+            from uuid import uuid5, NAMESPACE_URL
+            data.event_key = uuid5(NAMESPACE_URL, f"merrec:impression:{request.id}:{data.item_id}")
     if not db.get(Product, data.item_id):
         import json
         import subprocess
@@ -61,8 +81,9 @@ def log_user_event(db: Session, data: EventCreate, user_id: Optional[str] = None
     if data.event_key:
         previous = db.query(UserEvent).filter(UserEvent.event_key == str(data.event_key)).first()
         if previous:
-            if (previous.user_id, previous.session_id, previous.item_id, previous.event_type) != (
-                user_id, str(data.session_id) if data.session_id else None, data.item_id, data.event_type
+            if (previous.user_id, previous.session_id, previous.item_id, previous.event_type, previous.recommendation_request_id, previous.position) != (
+                user_id, str(data.session_id) if data.session_id else None, data.item_id, data.event_type,
+                str(data.recommendation_request_id) if data.recommendation_request_id else None, data.position
             ):
                 raise HTTPException(409, "Mã tương tác đã được sử dụng")
             return EventResponse(status="success", event_id=str(previous.id))

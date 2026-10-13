@@ -13,6 +13,7 @@ from urllib.parse import urljoin, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data/storefront/product_images.sqlite3"
+EMPTY_RESULT_TTL_SECONDS = 60
 
 
 @contextmanager
@@ -34,11 +35,12 @@ def connect():
 
 def read_images(item_id):
     with connect() as db:
-        rows = db.execute("SELECT url,title,source,score FROM verified_images WHERE item_id=? ORDER BY position", (item_id,)).fetchall()
+        rows = db.execute("SELECT url,title,source,score,verified_at FROM verified_images WHERE item_id=? ORDER BY position", (item_id,)).fetchall()
     if rows:
-        if rows[0][0] == "EMPTY_NO_IMAGE":
-            return []
-        return [dict(zip(("url", "title", "source", "score"), row)) for row in rows]
+        actual_images = [row for row in rows if row[0] != "EMPTY_NO_IMAGE"]
+        if not actual_images:
+            return [] if time.time() - max(row[4] for row in rows) < EMPTY_RESULT_TTL_SECONDS else None
+        return [dict(zip(("url", "title", "source", "score"), row)) for row in actual_images]
     return None
 
 
@@ -48,6 +50,7 @@ def save_images(item, images):
             db.execute("INSERT OR REPLACE INTO verified_images VALUES (?,?,?,?,?,?,?)",
                        (item["id"], "EMPTY_NO_IMAGE", "None", "None", 0.0, 0, time.time()))
             return
+        db.execute("DELETE FROM verified_images WHERE item_id=? AND url='EMPTY_NO_IMAGE'", (item["id"],))
         for position, image in enumerate(images):
             db.execute("INSERT OR REPLACE INTO verified_images VALUES (?,?,?,?,?,?,?)",
                        (item["id"], image["url"], image.get("title", ""), image.get("source", ""), image.get("score", 0), position, time.time()))
@@ -99,8 +102,7 @@ def public_url(url):
             addresses = socket.getaddrinfo(parsed.hostname, 443)
             return bool(addresses) and all(ipaddress.ip_address(address[4][0]).is_global for address in addresses)
         except Exception:
-            # Fallback for offline DNS resolution failure: accept valid HTTPS format
-            return True
+            return False
     except Exception:
         return False
 
@@ -136,16 +138,103 @@ def valid_image(candidate):
         return False
 
 
+def read_postgres_images(item_id):
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+    dsn = os.environ.get("DATABASE_URL")
+    if not dsn:
+        return None
+    try:
+        import psycopg
+        with psycopg.connect(dsn, connect_timeout=2) as db:
+            with db.cursor() as cur:
+                cur.execute("""
+                    SELECT image_url, image_url, source, match_score
+                    FROM product_images
+                    WHERE item_id = %s AND image_url != 'EMPTY_NO_IMAGE'
+                    ORDER BY is_primary DESC, match_score DESC
+                """, (item_id,))
+                rows = cur.fetchall()
+                if rows:
+                    return [dict(zip(("url", "title", "source", "score"), r)) for r in rows]
+    except Exception:
+        pass
+    return None
+
+
+def reference_images(item):
+    """Verified same-type illustrations, explicitly not images of this item.
+
+    Never store these in verified_images/product_images under the target ID.
+    """
+    import re
+    try:
+        from scripts.similar_products import title_tokens, TYPE_PATTERNS
+    except ModuleNotFoundError:
+        from similar_products import title_tokens, TYPE_PATTERNS
+    tokens = set(title_tokens(item.get("name"), item.get("brand")))
+    types = [pattern for pattern in TYPE_PATTERNS if re.search(pattern, str(item.get("name", "")).lower())]
+    categories = [item.get(key) for key in ("c0_name", "c1_name", "c2_name")]
+    dsn = os.environ.get("DATABASE_URL")
+    # An unspecified product type is too broad for an illustrative fallback.
+    if not dsn or len(tokens) < 2 or not types or not all(categories):
+        return []
+    try:
+        import psycopg
+        token_list = sorted(tokens)[:12]
+        score = " + ".join("CASE WHEN p.name ILIKE %s THEN 1 ELSE 0 END" for _ in token_list)
+        with psycopg.connect(dsn, connect_timeout=2, options="-c statement_timeout=3000") as db:
+            rows = db.execute(f"""SELECT p.item_id,p.name,p.brand,i.image_url,i.source,({score}) AS matches
+                FROM products p JOIN product_images i ON i.item_id=p.item_id
+                WHERE p.category0=%s AND p.category1=%s AND p.category2=%s AND p.item_id!=%s
+                  AND i.image_url LIKE 'https://%%'
+                ORDER BY matches DESC,i.is_primary DESC,i.match_score DESC LIMIT 30""",
+                (*[f"%{token}%" for token in token_list], *categories, item["id"])).fetchall()
+        candidates, seen = [], set()
+        for source_id, name, brand, url, source, _ in rows:
+            common = tokens & set(title_tokens(name, brand))
+            if len(common) < 2 or not all(re.search(pattern, name.lower()) for pattern in types) or url in seen:
+                continue
+            seen.add(url)
+            candidates.append({"url": url, "title": name, "source": source or "",
+                               "reference": True, "reference_item_id": str(source_id), "score": 0})
+            if len(candidates) == 3:
+                break
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            verified = list(pool.map(valid_image, candidates))
+        return [image for image, ok in zip(candidates, verified) if ok][:1]
+    except Exception:
+        return []
+
+
 def resolve_images(item, search):
     saved = read_images(item["id"])
     if saved is not None:
-        if saved:
-            sync_postgres()
         return saved
-    candidates = search(item)
+    pg_images = read_postgres_images(item["id"])
+    if pg_images:
+        save_images(item, pg_images)
+        return pg_images
+    try:
+        candidates = search(item)
+    except Exception as error:
+        references = reference_images(item)
+        if references:
+            return references
+        raise RuntimeError("Image search is temporarily unavailable") from error
+    if not candidates:
+        references = reference_images(item)
+        if references:
+            return references
+        save_images(item, [])
+        return []
     with ThreadPoolExecutor(max_workers=5) as pool:
         valid = list(pool.map(valid_image, candidates))
     images = [image for image, ok in zip(candidates, valid) if ok]
+    if not images:
+        references = reference_images(item)
+        if references:
+            return references
     save_images(item, images)
     if images:
         sync_postgres()

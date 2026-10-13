@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChevronLeft, ChevronRight, Heart, ImageIcon, LoaderCircle, Minus, Plus, RotateCcw, ShoppingCart, X, ZoomIn } from "lucide-react";
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Heart, ImageIcon, LoaderCircle, MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShoppingCart, Store, X, ZoomIn } from "lucide-react";
 import { MERREC_CATEGORIES, formatPrice, type Product } from "@/lib/merrecData";
 import { loadProductImages, type ProductImageResult } from "@/lib/product-images";
 import { addToCart } from "@/lib/cart";
@@ -17,8 +17,12 @@ const conditions: Record<string, string> = { New: "Mới", "Like new": "Như m�
 export default function ProductDetail({ product }: { product: Product }) {
   const router = useRouter();
   const { user } = useAuth();
-  const [images, setImages] = useState<ProductImageResult[]>([]);
-  const [imageState, setImageState] = useState("loading");
+  const initialImages: ProductImageResult[] = (product.images && product.images.length > 0)
+    ? product.images.map((url, idx) => ({ url, source: product.source || "merrec", title: product.name, score: 1.0, position: idx }))
+    : (product.image ? [{ url: product.image, source: product.source || "merrec", title: product.name, score: 1.0, position: 0 }] : []);
+
+  const [images, setImages] = useState<ProductImageResult[]>(initialImages);
+  const [imageState, setImageState] = useState(initialImages.length ? "ready" : "loading");
   const [selected, setSelected] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [qty, setQty] = useState(1);
@@ -47,6 +51,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   }
 
   useEffect(() => {
+    if (initialImages.length > 0 && attempt === 0) return;
     let cancelled = false;
     loadProductImages(product.id, attempt > 0).then((result) => {
       if (!cancelled) { setImages(result); setImageState(result.length ? "ready" : "empty"); }
@@ -63,11 +68,23 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   function purchase(buyNow = false, event?: React.MouseEvent<HTMLElement>) {
     try {
-      addToCart({ ...product, image: current?.url || "" }, qty);
+      addToCart({ ...product, image: current?.reference ? "" : current?.url || "" }, qty);
       if (!buyNow && event) {
         animateFlyToCart(event.currentTarget, current?.url || product.image);
+        void trackEventClient({
+          item_id: product.id,
+          event_type: "cart",
+          source_page: "product_detail",
+          metadata: { quantity: qty, price: product.price },
+        });
       }
       if (buyNow) {
+        void trackEventClient({
+          item_id: product.id,
+          event_type: "buy_start",
+          source_page: "product_detail",
+          metadata: { quantity: qty, price: product.price },
+        });
         if (!user) {
           router.push("/login?redirect=/checkout");
           return;
@@ -112,6 +129,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   <span className="pdp-zoom"><ZoomIn size={18} /></span>
                 </button>
                 <span className="pdp-image-count">{selected + 1} / {images.length}</span>
+                {current.reference && <span style={{ position: "absolute", top: 12, left: 12, background: "white", padding: "6px 10px", fontSize: 12 }}>Ảnh tham khảo — sản phẩm cùng loại</span>}
               </> : <div className="pdp-image-empty">
                 {imageState === "loading" ? <LoaderCircle size={38} className="pdp-spin" /> : <ImageIcon size={54} strokeWidth={1} />}
                 <strong>{imageState === "loading" ? "Đang tìm ảnh sản phẩm" : "Chưa tìm được ảnh phù hợp"}</strong>
@@ -134,7 +152,92 @@ export default function ProductDetail({ product }: { product: Product }) {
             <div className="pdp-field"><label htmlFor="product-quantity">Số lượng</label><div className="pdp-quantity-row"><div className="pdp-quantity"><button disabled={qty <= 1} aria-label="Giảm số lượng" onClick={() => setQty((value) => Math.max(1, value - 1))}><Minus size={15} /></button><input id="product-quantity" type="number" min={1} max={maxQty} value={qty} onChange={(event) => setQty(Math.min(Math.max(1, Number(event.target.value) || 1), Math.max(1, maxQty)))} /><button disabled={qty >= maxQty} aria-label="Tăng số lượng" onClick={() => setQty((value) => Math.min(maxQty, value + 1))}><Plus size={15} /></button></div>{product.stockKnown && <small>{product.stockCount} sản phẩm có sẵn</small>}</div></div>
           </div>
 
-          <div className="pdp-buy-actions"><button className="pdp-add" onClick={(e) => purchase(false, e)} disabled={product.stockKnown && !product.stockCount}><ShoppingCart size={21} />Thêm vào giỏ hàng</button><button className="pdp-buy" onClick={(e) => purchase(true, e)} disabled={product.stockKnown && !product.stockCount}>Mua ngay<ArrowRight size={18} /></button></div>
+          <div className="pdp-buy-actions">
+            <button className="pdp-add" onClick={(e) => purchase(false, e)} disabled={product.stockKnown && !product.stockCount}>
+              <ShoppingCart size={21} />Thêm vào giỏ hàng
+            </button>
+            <button className="pdp-buy" onClick={(e) => purchase(true, e)} disabled={product.stockKnown && !product.stockCount}>
+              Mua ngay<ArrowRight size={18} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* THÔNG TIN NGƯỜI BÁN & CHAT VỚI NGƯỜI BÁN (SELLER CARD - IMAGE 2) */}
+      <section className="pdp-seller-box" aria-label="Thông tin người bán">
+        <div className="pdp-seller-left">
+          <div className="pdp-seller-avatar-wrap">
+            <div className="pdp-seller-avatar">
+              <span>{product.brand ? product.brand.slice(0, 3).toUpperCase() : "KDZ"}</span>
+            </div>
+            <span className="pdp-seller-mall-badge">KDZ Mall</span>
+          </div>
+
+          <div className="pdp-seller-profile">
+            <div className="pdp-seller-name-row">
+              <h3>{product.brand ? `${product.brand} Official Store` : "KDZ Fashion Chính Hãng"}</h3>
+            </div>
+            <div className="pdp-seller-status">
+              <span className="status-online-dot"></span> online
+            </div>
+            <div className="pdp-seller-buttons">
+              <button
+                type="button"
+                className="btn-seller-chat"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("merrec:open-chat", {
+                      detail: { product },
+                    })
+                  );
+                }}
+              >
+                <MessageSquare size={16} /> Chat Ngay
+              </button>
+              <button
+                type="button"
+                className="btn-seller-view"
+                onClick={() => router.push(`/products?brand=${encodeURIComponent(product.brand || "KDZ")}`)}
+              >
+                <Store size={16} /> Xem Shop
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="pdp-seller-divider" />
+
+        <div className="pdp-seller-stats">
+          <div className="pdp-seller-stat-col">
+            <div className="seller-stat-item">
+              <span className="stat-name">Đánh Giá</span>
+              <span className="stat-val highlight">{product.rating ? `${product.rating}k` : "12.8k"}</span>
+            </div>
+            <div className="seller-stat-item">
+              <span className="stat-name">Sản Phẩm</span>
+              <span className="stat-val highlight">{product.stockCount ? `${product.stockCount * 4}` : "156"}</span>
+            </div>
+          </div>
+          <div className="pdp-seller-stat-col">
+            <div className="seller-stat-item">
+              <span className="stat-name">Tỉ Lệ Phản Hồi</span>
+              <span className="stat-val highlight">99%</span>
+            </div>
+            <div className="seller-stat-item">
+              <span className="stat-name">Thời Gian Phản Hồi</span>
+              <span className="stat-val highlight">trong vài phút</span>
+            </div>
+          </div>
+          <div className="pdp-seller-stat-col">
+            <div className="seller-stat-item">
+              <span className="stat-name">Tham Gia</span>
+              <span className="stat-val highlight">2 năm trước</span>
+            </div>
+            <div className="seller-stat-item">
+              <span className="stat-name">Người Theo Dõi</span>
+              <span className="stat-val highlight">45.2k</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -143,6 +246,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         triggerItemId={product.id}
         title="Sản phẩm tương tự"
         limit={12}
+        excludeItemIds={[product.id]}
       />
 
       <div className="pdp-bottom-layout">

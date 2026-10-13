@@ -1,23 +1,14 @@
-export interface ProductImageResult { url: string; source: string; title: string }
+export interface ProductImageResult { url: string; source: string; title: string; reference?: boolean }
 const requests = new Map<string, Promise<ProductImageResult[]>>();
 let running = 0;
 const queue: (() => void)[] = [];
 
-// Only expose decoded images to the gallery, never broken thumbnail placeholders.
-async function canDisplay(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const image = new Image();
-    const finish = (ok: boolean) => {
-      clearTimeout(timer);
-      image.onload = image.onerror = null;
-      resolve(ok);
-    };
-    const timer = setTimeout(() => finish(false), 8000);
-    image.referrerPolicy = "no-referrer";
-    image.onload = () => finish(image.naturalWidth > 0);
-    image.onerror = () => finish(false);
-    image.src = url;
-  });
+export function productImageUrls(values: unknown[]): string[] {
+  return [...new Set(values.filter((value): value is string =>
+    typeof value === "string" &&
+    (value.startsWith("https://") || (value.startsWith("/") && !value.startsWith("//"))) &&
+    !["/placeholder.svg", "/products/demo.png"].includes(value)
+  ))];
 }
 
 export function loadProductImages(id: string, retry = false) {
@@ -39,37 +30,49 @@ export function loadProductImages(id: string, retry = false) {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const resolved = Promise.resolve(parsed);
-          requests.set(id, resolved);
-          return resolved;
+          const images = parsed.filter((entry): entry is ProductImageResult =>
+            entry && productImageUrls([entry.url]).length > 0);
+          if (images.length) {
+            const resolved = Promise.resolve(images);
+            requests.set(id, resolved);
+            return resolved;
+          }
         }
       }
     } catch {}
   }
 
   const result = (async () => {
-    if (running >= 3) await new Promise<void>((resolve) => queue.push(resolve)); else running++;
+    if (running >= 4) await new Promise<void>((resolve) => queue.push(resolve)); else running++;
     try {
-      const response = await fetch(`/api/products/${encodeURIComponent(id)}/images`);
+      const response = await fetch(`/api/products/${encodeURIComponent(id)}/images`, {
+        cache: retry ? "reload" : "default",
+        signal: AbortSignal.timeout(90000),
+      });
       if (!response.ok) throw new Error("Không thể tìm ảnh lúc này");
       const data = await response.json();
-      const candidates = (data.images || []) as ProductImageResult[];
-      const loaded = await Promise.all(candidates.map((image) => canDisplay(image.url)));
-      const finalImages = candidates.filter((_, index) => loaded[index]);
+      const candidates: ProductImageResult[] = Array.isArray(data.images)
+        ? data.images.filter((entry: ProductImageResult) => entry && productImageUrls([entry.url]).length > 0)
+        : [];
 
-      if (typeof window !== "undefined" && finalImages.length > 0) {
+      if (typeof window !== "undefined" && candidates.length > 0 && !candidates.some((image) => image.reference)) {
         try {
-          sessionStorage.setItem(`merrec_img_${id}`, JSON.stringify(finalImages));
+          sessionStorage.setItem(`merrec_img_${id}`, JSON.stringify(candidates));
         } catch {}
       }
-      return finalImages;
+      return candidates;
     } finally {
+      running--;
       const next = queue.shift();
-      if (next) next(); else running--;
+      if (next) {
+        running++;
+        next();
+      }
     }
   })();
 
   requests.set(id, result);
-  result.catch(() => requests.delete(id));
+  const forget = () => { if (requests.get(id) === result) requests.delete(id); };
+  result.then((images) => { if (!images.length || images.some((image) => image.reference)) forget(); }, forget);
   return result;
 }

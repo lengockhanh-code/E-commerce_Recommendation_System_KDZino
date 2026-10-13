@@ -35,18 +35,26 @@ export async function getProduct(id: string): Promise<Product | null> {
   return bridge<Product | null>(["detail", id.trim()]);
 }
 
-export interface SearchImage { url: string; source: string; title: string }
+export interface SearchImage { url: string; source: string; title: string; reference?: boolean }
 const cache = new Map<string, { expires: number; promise: Promise<SearchImage[]> }>();
 let nextSync = 0;
 export async function findImages(product: Product) {
   if (Date.now() >= nextSync) {
     nextSync = Date.now() + 60000;
-    await bridge(["sync-images"]).catch(() => {});
+    // Outbox recovery must not delay an image response during a DB outage.
+    void bridge(["sync-images"]).catch(() => {});
   }
   const existing = cache.get(product.id);
   if (existing && existing.expires > Date.now()) return existing.promise;
   if (cache.size >= 500) cache.delete(cache.keys().next().value!);
-  const promise = bridge<SearchImage[]>(["images"], product).catch((error) => { cache.delete(product.id); throw error; });
+  const promise = bridge<SearchImage[]>(["images"], product).then((images) => {
+    if (!images.length) cache.delete(product.id);
+    else if (images.some((image) => image.reference)) {
+      const entry = cache.get(product.id);
+      if (entry) entry.expires = Date.now() + 60000;
+    }
+    return images;
+  }).catch((error) => { cache.delete(product.id); throw error; });
   cache.set(product.id, { expires: Date.now() + 3600000, promise });
   return promise;
 }
@@ -64,23 +72,34 @@ const recCache = new Map<string, { expires: number; promise: Promise<Recommendat
 export async function fetchRecommendations(
   context = "home",
   triggerItemId: string | null = null,
-  limit = 12
+  limit = 12,
+  sessionId: string | null = null,
+  userId: string | null = null
 ): Promise<RecommendationResult> {
-  const cacheKey = `${context}:${triggerItemId || "null"}:${limit}`;
+  const cacheKey = `${context}:${triggerItemId || "null"}:${limit}:${sessionId || "null"}:${userId || "null"}`;
   const existing = recCache.get(cacheKey);
   if (existing && existing.expires > Date.now()) {
     return existing.promise;
   }
   if (recCache.size >= 200) recCache.delete(recCache.keys().next().value!);
-  const promise = bridge<RecommendationResult>(["recommendations", context, triggerItemId ?? "null", String(limit)]);
-  recCache.set(cacheKey, { expires: Date.now() + 600000, promise }); // 10 min cache
+  const promise = bridge<RecommendationResult>([
+    "recommendations",
+    context,
+    triggerItemId ?? "null",
+    String(limit),
+    sessionId ?? "null",
+    userId ?? "null"
+  ]);
+  recCache.set(cacheKey, { expires: Date.now() + 15000, promise }); // 15 sec cache to react quickly to new interactions
   promise.catch(() => recCache.delete(cacheKey));
   return promise;
 }
 
 export interface UserEventPayload {
   item_id: string;
-  event_type: "view" | "like" | "cart" | "offer" | "buy_start" | "buy_comp";
+  event_type: string;
+  user_id?: string;
+  session_id?: string;
   source_page?: string;
   recommendation_request_id?: string;
   position?: number;

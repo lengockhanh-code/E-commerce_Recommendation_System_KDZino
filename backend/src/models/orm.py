@@ -3,7 +3,7 @@
 import datetime
 import uuid
 from sqlalchemy import (
-    Column, String, Text, Float, Boolean, Integer, DateTime, ForeignKey, JSON
+    Column, String, Text, Float, Boolean, Integer, BigInteger, DateTime, ForeignKey, JSON
 )
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.orm import relationship
@@ -96,6 +96,12 @@ class Product(Base):
     size = Column(Text, nullable=True)
     color = Column(Text, nullable=True)
     shipper = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)
+    original_price = Column(Float, nullable=True)
+    stock = Column(Integer, default=100, nullable=True)
+    sku = Column(Text, nullable=True)
+    weight = Column(Integer, nullable=True)
+    dimensions = Column(Text, nullable=True)
     last_seen_ts = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
@@ -106,7 +112,7 @@ class Product(Base):
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    id = Column(GUID(), primary_key=True, default=generate_uuid)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     item_id = Column(String(100), ForeignKey("products.item_id", ondelete="CASCADE"), nullable=False, index=True)
     image_url = Column(Text, nullable=False)
     source = Column(String(50), default="serpapi")
@@ -185,7 +191,9 @@ class RecommendationRequest(Base):
     context = Column(String(50), nullable=False)
     trigger_item_id = Column(String(100), ForeignKey("products.item_id", ondelete="SET NULL"), nullable=True)
     model_name = Column(String(100), nullable=True)
-    generated_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
+    generated_at = Column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
+
+    items = relationship("RecommendationItem", back_populates="request", cascade="all, delete-orphan")
 
 
 class RecommendationItem(Base):
@@ -195,6 +203,8 @@ class RecommendationItem(Base):
     rank_position = Column(Integer, nullable=False)
     score = Column(Float, nullable=True)
     source_model = Column(String(100), nullable=True)
+
+    request = relationship("RecommendationRequest", back_populates="items")
 
 
 class UserEvent(Base):
@@ -210,4 +220,4 @@ class UserEvent(Base):
     source_page = Column(String(100), nullable=True)
     recommendation_request_id = Column(GUID(), nullable=True)
     position = Column(Integer, nullable=True)
-    created_at = Column("event_time", DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
+    created_at = Column("event_time", DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)

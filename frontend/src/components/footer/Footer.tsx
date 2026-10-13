@@ -2,10 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FaFacebookF, FaYoutube, FaTiktok, FaInstagram, FaApple, FaGooglePlay } from "react-icons/fa";
 import "./Footer.css";
 
 export default function Footer() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/seller")) {
+    return null;
+  }
+
   return (
     <footer className="footer">
       <div className="footer-inner">

@@ -83,6 +83,7 @@ class ProductSummary(BaseModel):
     product_id: Optional[str] = None
     name: str
     price: float
+    original_price: Optional[float] = None
     category0: Optional[str] = None
     category1: Optional[str] = None
     category2: Optional[str] = None
@@ -90,10 +91,59 @@ class ProductSummary(BaseModel):
     condition: Optional[str] = None
     size: Optional[str] = None
     color: Optional[str] = None
+    description: Optional[str] = None
+    stock: Optional[int] = 100
+    sku: Optional[str] = None
+    weight: Optional[int] = None
+    dimensions: Optional[str] = None
+    shipper: Optional[str] = None
+    is_active: Optional[bool] = True
     images: List[str] = []
 
     class Config:
         from_attributes = True
+
+
+class ProductCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=150)
+    price: float = Field(..., ge=0.0)
+    original_price: Optional[float] = None
+    category0: Optional[str] = "Thời trang"
+    category1: Optional[str] = None
+    category2: Optional[str] = None
+    brand: Optional[str] = None
+    condition: Optional[str] = "Mới 100%"
+    description: Optional[str] = None
+    short_description: Optional[str] = None
+    stock: int = Field(1, ge=0)
+    sku: Optional[str] = None
+    weight: Optional[int] = None
+    dimensions: Optional[str] = None
+    shipper: Optional[str] = "KDZino Express"
+    size: Optional[str] = None
+    color: Optional[str] = None
+    images: List[str] = []
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    category0: Optional[str] = None
+    category1: Optional[str] = None
+    category2: Optional[str] = None
+    brand: Optional[str] = None
+    condition: Optional[str] = None
+    description: Optional[str] = None
+    stock: Optional[int] = None
+    sku: Optional[str] = None
+    weight: Optional[int] = None
+    dimensions: Optional[str] = None
+    shipper: Optional[str] = None
+    size: Optional[str] = None
+    color: Optional[str] = None
+    is_active: Optional[bool] = None
+    images: Optional[List[str]] = None
 
 
 class ProductListResponse(BaseModel):
@@ -178,19 +228,19 @@ class RecommendationResponse(BaseModel):
 # --- Event Tracking Schemas ---
 
 class EventCreate(BaseModel):
-    event_type: Literal["view", "view_item", "click", "like", "unlike", "cart", "add_to_cart", "offer", "buy_start", "buy_comp", "purchase", "order"]
+    event_type: Literal["impression", "view", "view_item", "click", "like", "unlike", "cart", "add_to_cart", "offer", "offer_make", "buy_start", "buy_comp", "purchase", "order"]
     item_id: str = Field(min_length=1, max_length=100, pattern=r"^\S+$")
     session_id: Optional[UUID] = None
     event_key: Optional[UUID] = None
     source_page: Optional[str] = Field(None, max_length=100)
     recommendation_request_id: Optional[UUID] = None
-    position: Optional[int] = Field(None, ge=1, le=50)
+    position: Optional[int] = Field(None, ge=1, le=2000)
     extra_data: Optional[dict] = None
 
     @field_validator("event_type")
     @classmethod
     def canonical_event(cls, value):
-        return {"view_item": "view", "add_to_cart": "cart", "purchase": "buy_comp", "order": "buy_comp"}.get(value, value)
+        return {"view_item": "view", "add_to_cart": "cart", "purchase": "buy_comp", "order": "buy_comp", "offer_make": "offer"}.get(value, value)
 
 
 class EventResponse(BaseModel):
@@ -230,4 +280,34 @@ class AdminStatsResponse(BaseModel):
     total_products: int
     total_users: int
     top_selling_products: List[dict] = []
+    recent_orders: List[OrderResponse] = []
+
+
+# --- Seller Portal Schemas ---
+
+class DailyRevenuePoint(BaseModel):
+    day: str
+    revenue: float
+    formatted: str
+
+
+class TopSellingSellerProduct(BaseModel):
+    item_id: str
+    name: str
+    sold_count: int
+    price: float
+    image_url: Optional[str] = None
+
+
+class SellerStatsResponse(BaseModel):
+    revenue_today: float
+    revenue_growth: float = 12.5
+    new_orders_count: int
+    new_orders_growth: float = 27.3
+    items_sold_count: int
+    items_sold_growth: float = 18.2
+    shop_views: int
+    shop_views_growth: float = 10.1
+    daily_revenue: List[DailyRevenuePoint] = []
+    top_selling_products: List[TopSellingSellerProduct] = []
     recent_orders: List[OrderResponse] = []
